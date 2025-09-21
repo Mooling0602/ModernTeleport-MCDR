@@ -1,0 +1,115 @@
+import os
+
+from typing import Literal, Any
+from mcdreforged.api.all import Serializable, PluginServerInterface
+
+__command_nodes_path = "command_nodes.yml"
+__config_path = "config.yml"
+__auto_enabled_location_marker_as_warp: bool = False
+
+
+class CommandNodes(Serializable):
+    prefix: str = "!!"
+    plugin: str = "mtp"
+    back: str = "back"
+    home: str = "home"
+    teleport: str = "tp"
+    teleport_ask: str = "tpa"
+    teleport_invite: str = "tph"
+    warp: str = "warp"
+
+
+class PluginModules(Serializable):
+    back: bool = False
+    home: bool = True
+    teleport: bool = True
+    teleport_ask: bool = True
+    teleport_invite: bool = True
+    warp: bool = True
+
+
+class MainConfig(Serializable):
+    enable: bool = False
+    enable_modules: PluginModules = PluginModules()
+    verify_mode: Literal["name", "uuid"] = "uuid"
+    rcon_support: bool = False
+    rcon_module: Literal["mcdr", "async_rcon"] = "mcdr"
+    location_marker_as_warp: bool = False
+
+
+def get_main_config_folder(s: PluginServerInterface) -> str:
+    return s.get_data_folder()
+
+
+def get_default_config() -> MainConfig:
+    return MainConfig()
+
+
+def get_command_nodes(s: PluginServerInterface) -> CommandNodes:
+    try:
+        _command_nodes = s.load_config_simple(
+            file_name=__command_nodes_path,
+            target_class=CommandNodes,
+            echo_in_console=False,
+        )
+        s.logger.info("config.load_command_nodes")
+    except Exception as e:
+        s.logger.error(
+            f"Error loading customed command nodes, fallback to default: {e}"
+        )
+        return CommandNodes()
+    assert isinstance(_command_nodes, CommandNodes)
+    return _command_nodes
+
+
+def get_config(s: PluginServerInterface) -> MainConfig:
+    global __auto_enabled_location_marker_as_warp
+    _config: Any | None = None
+    _main_dir = get_main_config_folder(s)
+    _config_path = os.path.join(_main_dir, __config_path)
+    _detected_async_rcon: bool = False
+    if os.path.exists(_config_path):
+        s.logger.info("config.load_existing")
+        try:
+            _config = s.load_config_simple(
+                file_name=__config_path,
+                target_class=MainConfig,
+            )
+        except Exception as e:
+            s.logger.error("Error loading main config: ")
+            raise e
+    if isinstance(_config, MainConfig):
+        s.logger.info("config.success")
+        return _config
+    s.logger.info("config.generate")
+    _new_config: MainConfig = get_default_config()
+    s.logger.info("config.auto_detect")
+    if "mg_events" in s.get_plugin_list():
+        s.logger.info("optional.mg_events")
+        _new_config.enable_modules.back = True
+    if "async_rcon" in s.get_plugin_list():
+        s.logger.info("optional.async_rcon")
+        _new_config.rcon_support = True
+        _new_config.rcon_module = "async_rcon"
+        _detected_async_rcon = True
+    if "location_marker" in s.get_plugin_list():
+        s.logger.info("optional.location_marker")
+        _new_config.location_marker_as_warp = True
+        __auto_enabled_location_marker_as_warp = True
+    if s.is_server_startup() and s.is_rcon_running():
+        if not _detected_async_rcon:
+            s.logger.info("rcon.mcdr")
+            _new_config.rcon_support = True
+    s.logger.info("config.detected")
+    try:
+        s.save_config_simple(
+            config=_new_config,
+            file_name=__config_path,
+            in_data_folder=True,
+        )
+    except Exception as e:
+        s.logger.error(f"Error saving new config: {e}")
+        s.logger.info("config.fallback")
+        return get_default_config()
+    s.logger.info("config.success")
+    return _new_config

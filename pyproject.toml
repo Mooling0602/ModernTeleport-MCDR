@@ -1,0 +1,9 @@
+[project]
+name = "modernteleport-mcdr"
+version = "0.0.1"
+description = "A modern teleport plugin with rich functional design for Minecraft servers."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcdreforged>=2.14.1",
+]

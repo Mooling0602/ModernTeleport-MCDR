@@ -1,0 +1,7 @@
+uv.lock
+.python-version
+.venv/
+.vscode/
+.idea/
+.pyre/
+__pycache__/
