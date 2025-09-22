@@ -1,12 +1,10 @@
 import os
-
 import modern_teleport.runtime as runtime
 
 from enum import StrEnum, auto
-
-from mcdreforged import PluginServerInterface
-
+from mcdreforged.api.all import PluginServerInterface
 from auto_uuid_api import is_uuid, local_api
+from modern_teleport.utils import execute_if
 
 
 class MTP(StrEnum):
@@ -17,11 +15,10 @@ class MTP(StrEnum):
 
 
 class DataManager:
+    @execute_if(lambda: runtime.config is not None and runtime.server is not None, True)
     def __init__(self) -> None:
-        if not runtime.config:
-            raise RuntimeError("error.config_not_loaded")
-        if not runtime.server:
-            raise RuntimeError("error.need_mcdr_server")
+        assert runtime.config is not None
+        assert runtime.server is not None
         self.config: runtime.MainConfig = runtime.config
         self.server: PluginServerInterface = runtime.server
         self.data_folder: str = os.path.join(runtime.server.get_data_folder(), "data")
