@@ -10,8 +10,12 @@ from mcdreforged.api.all import (
 
 from modern_teleport.mcdr.config import CommandNodes, __config_path
 
-builder: SimpleCommandBuilder = SimpleCommandBuilder()
-psi: PluginServerInterface = ServerInterface.psi()
+builder: SimpleCommandBuilder | None = SimpleCommandBuilder()
+psi: PluginServerInterface | None = None
+try:
+    psi = ServerInterface.psi()
+except RuntimeError:
+    psi = None
 command_nodes: CommandNodes | None = None
 __remove_main_config: bool = False
 
