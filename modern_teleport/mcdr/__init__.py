@@ -7,7 +7,12 @@ from mcdreforged.api.all import (
     spam_proof,
 )
 
-from modern_teleport.mcdr.config import CommandNodes, get_command_nodes, get_config, MainConfig
+from modern_teleport.mcdr.config import (
+    CommandNodes,
+    get_command_nodes,
+    get_config,
+    MainConfig,
+)
 from modern_teleport.mcdr.commands import load_command_nodes, register_commands
 
 psi: PluginServerInterface | None = None
@@ -19,8 +24,9 @@ except RuntimeError:
 
 def on_load(s: PluginServerInterface, prev_module):
     s.logger.info("Init message.")
-    config = get_config(s)
+    config: MainConfig = get_config(s)
     runtime.load_config(config)
+    runtime.set_server(s)
     command_nodes: CommandNodes = get_command_nodes(s)
     load_command_nodes(command_nodes)
     register_commands(s)
