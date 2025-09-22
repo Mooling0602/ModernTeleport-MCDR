@@ -1,24 +1,74 @@
+import os
+
 import modern_teleport.runtime as runtime
 
 from enum import StrEnum, auto
+
+from mcdreforged import PluginServerInterface
+
+from auto_uuid_api import is_uuid, local_api
 
 
 class MTP(StrEnum):
     BACK = auto()
     HOME = auto()
     WARP = auto()
+    TPRequest = "tpr"
 
 
 class DataManager:
-    pass
+    def __init__(self) -> None:
+        if not runtime.config:
+            raise RuntimeError("error.config_not_loaded")
+        if not runtime.server:
+            raise RuntimeError("error.need_mcdr_server")
+        self.config: runtime.MainConfig = runtime.config
+        self.server: PluginServerInterface = runtime.server
+        self.data_folder: str = os.path.join(runtime.server.get_data_folder(), "data")
+        self.world_dir: str | None = None
+        self.server_dir: str | None = runtime.server.get_mcdr_config().get(
+            "working_directory", None
+        )
+        if self.server_dir:
+            self.world_dir = os.path.join(
+                self.server_dir, runtime.config.data_storage.world_name
+            )
+        if self.world_dir and os.path.exists(self.world_dir):
+            self.data_folder = os.path.join(
+                self.world_dir,
+                runtime.server.get_self_metadata().id,
+            )
+
+    def get_player_folder(self, name_or_uuid: str) -> str:
+        if is_uuid(name_or_uuid):
+            return os.path.join(self.data_folder, name_or_uuid)
+        else:
+            _uuid: str | None = local_api.get_uuid(name_or_uuid)
+            if _uuid:
+                return os.path.join(self.data_folder, _uuid)
+            else:
+                if self.config.identity_mode != "uuid":
+                    self.server.logger.warning("data.no_uuid")
+                    return os.path.join(self.data_folder, name_or_uuid)
+                else:
+                    raise RuntimeError("error.no_uuid")
+
+    def get_data_file_path(
+        self, module: MTP, name_or_uuid: str | None = None
+    ) -> str | None:
+        if module == MTP.WARP or module == MTP.TPRequest:
+            return os.path.join(self.data_folder, f"{module}.json")
+        else:
+            if not name_or_uuid:
+                self.server.logger.error("data.need_name_or_uuid")
+                raise TypeError("data.need_name_or_uuid")
+            return os.path.join(
+                self.data_folder, self.get_player_folder(name_or_uuid), f"{module}.json"
+            )
 
 
 if __name__ == "__main__":
-    print("Print all MTP modules for testing enum.")
-    mtp_modules: list[str] = [
-        MTP.BACK,
-        MTP.HOME,
-        MTP.WARP
-    ]
+    print("Print all MTP(ModernTeleport) modules for testing enum.")
+    mtp_modules: list[str] = [MTP.BACK, MTP.HOME, MTP.WARP, MTP.TPRequest]
     for i in mtp_modules:
-        print(i)
+        print(i, isinstance(i, str))

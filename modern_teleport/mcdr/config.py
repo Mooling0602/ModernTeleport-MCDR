@@ -28,13 +28,20 @@ class PluginModules(Serializable):
     warp: bool = True
 
 
+class DataStorage(Serializable):
+    save_to_world: bool = False
+    server_dir: str = ""
+    world_name: str = "world"
+
+
 class MainConfig(Serializable):
     enable: bool = False
     enable_modules: PluginModules = PluginModules()
-    verify_mode: Literal["name", "uuid"] = "uuid"
+    identity_mode: Literal["name", "uuid"] = "uuid"
     rcon_support: bool = False
     rcon_module: Literal["mcdr", "async_rcon"] = "mcdr"
     location_marker_as_warp: bool = False
+    data_storage: DataStorage = DataStorage()
 
 
 def get_main_config_folder(s: PluginServerInterface) -> str:
@@ -67,6 +74,7 @@ def get_config(s: PluginServerInterface) -> MainConfig:
     _config: Any | None = None
     _main_dir = get_main_config_folder(s)
     _config_path = os.path.join(_main_dir, __config_path)
+    _server_dir: str | None = s.get_mcdr_config().get("working_directory", None)
     _detected_async_rcon: bool = False
     if os.path.exists(_config_path):
         s.logger.info("config.load_existing")
@@ -101,6 +109,12 @@ def get_config(s: PluginServerInterface) -> MainConfig:
             s.logger.info("rcon.mcdr")
             _new_config.rcon_support = True
     s.logger.info("config.detected")
+    _world_dir: str | None = None
+    if _server_dir:
+        _world_dir = os.path.join(_server_dir, _new_config.data_storage.world_name)
+    if _world_dir and os.path.exists(_world_dir):
+        s.logger.info("config.world_detected")
+        _new_config.data_storage.save_to_world = True
     try:
         s.save_config_simple(
             config=_new_config,

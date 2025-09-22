@@ -5,7 +5,7 @@ from mcdreforged.api.all import (
     ServerInterface,
     CommandSource,
     CommandContext,
-    SimpleCommandBuilder
+    SimpleCommandBuilder,
 )
 
 from modern_teleport.mcdr.config import CommandNodes, __config_path
@@ -29,18 +29,25 @@ def get_psi(src: CommandSource | None = None) -> PluginServerInterface:
     if src:
         server: PluginServerInterface = src.get_server().psi()
         return server
-    return psi
+    if psi:
+        return psi
+    else:
+        raise RuntimeError("error.need_mcdr_server")
 
 
 def register_commands(s: PluginServerInterface):
     # builder.register(s)
-    if not command_nodes:
+    if not command_nodes or not builder:
         return
     s.logger.info("register_commands")
-    builder.command(f"{command_nodes.prefix}{
-                    command_nodes.plugin} delete config.main", on_plugin_clean_main_config)
-    builder.command(f"{command_nodes.prefix}{
-                    command_nodes.plugin} config reset main", on_plugin_clean_main_config)
+    builder.command(
+        f"{command_nodes.prefix}{command_nodes.plugin} delete config.main",
+        on_plugin_clean_main_config,
+    )
+    builder.command(
+        f"{command_nodes.prefix}{command_nodes.plugin} config reset main",
+        on_plugin_clean_main_config,
+    )
     builder.register(s)
 
 
