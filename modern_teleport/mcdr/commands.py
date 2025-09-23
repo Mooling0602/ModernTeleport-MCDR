@@ -4,7 +4,7 @@ from mcdreforged.api.all import (
     PluginServerInterface,
     ServerInterface,
     CommandSource,
-    CommandContext,
+    # CommandContext,
     SimpleCommandBuilder,
 )
 
@@ -39,19 +39,21 @@ def register_commands(s: PluginServerInterface):
     # builder.register(s)
     if not command_nodes or not builder:
         return
+    _pfx = command_nodes.prefix
+    _plg = command_nodes.plugin
     s.logger.info("register_commands")
     builder.command(
-        f"{command_nodes.prefix}{command_nodes.plugin} delete config.main",
+        f"{_pfx}{_plg} delete config.main",
         on_plugin_clean_main_config,
     )
     builder.command(
-        f"{command_nodes.prefix}{command_nodes.plugin} config reset main",
+        f"{_pfx}{_plg} config reset main",
         on_plugin_clean_main_config,
     )
     builder.register(s)
 
 
-def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):
+def on_plugin_clean_main_config(src: CommandSource, _):
     if not src.has_permission(4):
         src.reply("permission.denied")
         return

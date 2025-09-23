@@ -32,7 +32,7 @@ class RconManager:
                 raise TimeoutError("rcon.no_response")
         return result
 
-    def get_from_async_rcon(self, command: str) -> str | None:
+    def get_from_async_rcon(self, _: str) -> str | None:
         raise NotImplementedError("module.not_implemented_yet")
 
     @execute_if(lambda: runtime.server is not None)

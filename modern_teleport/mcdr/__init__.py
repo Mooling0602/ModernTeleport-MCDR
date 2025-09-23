@@ -3,8 +3,8 @@ import modern_teleport.runtime as runtime
 from mcdreforged.api.all import (
     PluginServerInterface,
     ServerInterface,
-    new_thread,
-    spam_proof,
+    # new_thread,
+    # spam_proof,
 )
 
 from modern_teleport.mcdr.config import (
@@ -22,7 +22,7 @@ except RuntimeError:
     psi = None
 
 
-def on_load(s: PluginServerInterface, prev_module):
+def on_load(s: PluginServerInterface, _):
     s.logger.info("Init message.")
     config: MainConfig = get_config(s)
     runtime.load_config(config)
