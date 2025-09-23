@@ -6,6 +6,7 @@ from mcdreforged.api.all import (
     ServerInterface,
     CommandSource,
     SimpleCommandBuilder,
+    Text,
 )
 
 from modern_teleport.mcdr.config import CommandNodes, __config_path
@@ -66,7 +67,17 @@ def register_commands(s: PluginServerInterface):
     )
     # builder.command(f"{_cmd} delete config.main --reload", on_plugin_clean_main_config)
     # builder.command(f"{_cmd} config reset main --reload", on_plugin_clean_main_config)
+    builder.arg("player", Text).suggests(lambda: ["Steve", "Alex"])
+    builder.command(
+        f"{_pfx}{_plg} debug select <player>",
+        _debug_on_select_player
+    )
     builder.register(s)
+
+
+def _debug_on_select_player(src: CommandSource, ctx: CommandContext):
+    player = ctx.get("player", None)
+    src.reply(f"Choosing {player}")
 
 
 def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):
