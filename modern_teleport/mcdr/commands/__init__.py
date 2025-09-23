@@ -1,14 +1,17 @@
 import os
 
 from mcdreforged.api.all import (
+    CommandContext,
     PluginServerInterface,
     ServerInterface,
     CommandSource,
-    # CommandContext,
     SimpleCommandBuilder,
 )
 
 from modern_teleport.mcdr.config import CommandNodes, __config_path
+from modern_teleport.mcdr.commands.utils import (
+    build_exec_with_multiple_commands as build_commands,
+)
 
 builder: SimpleCommandBuilder | None = SimpleCommandBuilder()
 psi: PluginServerInterface | None = None
@@ -41,19 +44,27 @@ def register_commands(s: PluginServerInterface):
         return
     _pfx = command_nodes.prefix
     _plg = command_nodes.plugin
+    _cmd = _pfx + _plg
     s.logger.info("register_commands")
-    builder.command(
-        f"{_pfx}{_plg} delete config.main",
+    # builder.command(
+    #     f"{_cmd} delete config.main",
+    #     on_plugin_clean_main_config,
+    # )
+    # builder.command(
+    #     f"{_cmd} config reset main",
+    #     on_plugin_clean_main_config,
+    # )
+    build_commands(
+        builder,
+        [f"{_cmd} delete config.main", f"{_cmd} config reset main"],
         on_plugin_clean_main_config,
     )
-    builder.command(
-        f"{_pfx}{_plg} config reset main",
-        on_plugin_clean_main_config,
-    )
+    builder.command(f"{_cmd} delete config.main --reload", on_plugin_clean_main_config)
+    builder.command(f"{_cmd} config reset main --reload", on_plugin_clean_main_config)
     builder.register(s)
 
 
-def on_plugin_clean_main_config(src: CommandSource, _):
+def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):
     if not src.has_permission(4):
         src.reply("permission.denied")
         return
@@ -66,3 +77,5 @@ def on_plugin_clean_main_config(src: CommandSource, _):
     _main_dir = server.get_data_folder()
     os.remove(os.path.join(_main_dir, __config_path))
     server.logger.info("reset.file_removed")
+    if "--reload" in ctx.command:
+        server.reload_plugin(server.get_self_metadata().id)
