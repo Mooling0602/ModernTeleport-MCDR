@@ -56,11 +56,16 @@ def register_commands(s: PluginServerInterface):
     # )
     build_commands(
         builder,
-        [f"{_cmd} delete config.main", f"{_cmd} config reset main"],
+        [
+            f"{_cmd} delete config.main",
+            f"{_cmd} config reset main",
+            f"{_cmd} delete config.main --reload",
+            f"{_cmd} config reset main --reload",
+        ],
         on_plugin_clean_main_config,
     )
-    builder.command(f"{_cmd} delete config.main --reload", on_plugin_clean_main_config)
-    builder.command(f"{_cmd} config reset main --reload", on_plugin_clean_main_config)
+    # builder.command(f"{_cmd} delete config.main --reload", on_plugin_clean_main_config)
+    # builder.command(f"{_cmd} config reset main --reload", on_plugin_clean_main_config)
     builder.register(s)
 
 
