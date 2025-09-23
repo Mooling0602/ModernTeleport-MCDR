@@ -43,18 +43,10 @@ def register_commands(s: PluginServerInterface):
     # builder.register(s)
     if not command_nodes or not builder:
         return
-    _pfx = command_nodes.prefix
-    _plg = command_nodes.plugin
-    _cmd = _pfx + _plg
+    _pfx: str = command_nodes.prefix
+    _plg: str = command_nodes.plugin
+    _cmd: str = _pfx + _plg
     s.logger.info("register_commands")
-    # builder.command(
-    #     f"{_cmd} delete config.main",
-    #     on_plugin_clean_main_config,
-    # )
-    # builder.command(
-    #     f"{_cmd} config reset main",
-    #     on_plugin_clean_main_config,
-    # )
     build_commands(
         builder,
         [
@@ -65,26 +57,22 @@ def register_commands(s: PluginServerInterface):
         ],
         on_plugin_clean_main_config,
     )
-    # builder.command(f"{_cmd} delete config.main --reload", on_plugin_clean_main_config)
-    # builder.command(f"{_cmd} config reset main --reload", on_plugin_clean_main_config)
     builder.arg("player", Text).suggests(lambda: ["Steve", "Alex"])
-    builder.command(
-        f"{_pfx}{_plg} debug select <player>",
-        _debug_on_select_player
-    )
+    builder.command(f"{_pfx}{_plg} debug select <player>", _debug_on_select_player)
     builder.register(s)
 
 
 def _debug_on_select_player(src: CommandSource, ctx: CommandContext):
-    player = ctx.get("player", None)
-    src.reply(f"Choosing {player}")
+    player: str | None = ctx.get("player", None)
+    if player:
+        src.reply(f"Choosing {player}")
 
 
 def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):
     if not src.has_permission(4):
         src.reply("permission.denied")
         return
-    server = get_psi(src)
+    server: PluginServerInterface = get_psi(src)
     global __remove_main_config
     if not __remove_main_config:
         server.logger.warning("reset.confirm.config.main")

@@ -10,7 +10,9 @@
     "link": "https://github.com/Mooling0602/ModernTeleport-MCDR",
     "dependencies": {
         "mcdreforged": ">=2.14.1",
-        "python": ">=3.11"
+        "python": ">=3.11",
+        "auto_uuid_api": ">=0.1.0",
+        "location_api": ">=0.1.0"
     },
     "entrypoint": "modern_teleport.mcdr",
     "resources": [

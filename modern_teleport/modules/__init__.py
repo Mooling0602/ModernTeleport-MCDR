@@ -1,1 +1,50 @@
+import modern_teleport.runtime as runtime
 
+from mcdreforged.api.all import PluginServerInterface
+from auto_uuid_api import is_uuid, local_api
+from location_api import Point3D, MCPosition
+from modern_teleport.utils import execute_if
+from modern_teleport.modules.rcon import RconManager
+
+rcon: RconManager = RconManager()
+
+
+@execute_if(
+    lambda: runtime.config is not None
+    and runtime.config.optional_apis.online_player_api
+)
+def get_online_players(s: PluginServerInterface) -> list[str] | None:
+    oapi = s.get_plugin_instance("online_player_api")  # type: ignore
+    if oapi:
+        return oapi.get_player_list()  # type: ignore
+
+
+@execute_if(
+    lambda: runtime.config is not None
+    and runtime.config.optional_apis.minecraft_data_api
+)
+def get_player_pos(s: PluginServerInterface, player: str) -> MCPosition | None:
+    mc_data_api = s.get_plugin_instance("minecraft_data_api")  # type: ignore
+    if mc_data_api:  # type: ignore
+        position: list | None = mc_data_api.get_player_info(player, "Pos")  # type: ignore
+        dimension: str | None = mc_data_api.get_player_info(player, "Dimension")  # type: ignore
+        if position and dimension:
+            return MCPosition(Point3D(*position), dimension)
+
+
+class GetInfo:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    @execute_if(lambda: runtime.server is not None)
+    def is_player_online(cls, player: str) -> bool:  # pyright: ignore[reportRedeclaration]
+        assert runtime.server is not None
+        if is_uuid(player):
+            player: str | None = local_api.get(player)
+        if player:
+            online_players: list[str] | None = get_online_players(runtime.server)
+            if not online_players:
+                online_players = rcon.get_online_players()
+                return player in online_players if online_players else False
+        return False

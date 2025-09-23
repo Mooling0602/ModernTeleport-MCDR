@@ -1,5 +1,4 @@
 from mcdreforged.api.all import PluginServerInterface
-
 from modern_teleport.mcdr.config import MainConfig
 
 config: MainConfig | None = None

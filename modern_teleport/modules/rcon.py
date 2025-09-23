@@ -1,8 +1,9 @@
+import re
 import modern_teleport.runtime as runtime
 
 from concurrent.futures import ThreadPoolExecutor, Future
 from typing import Literal
-
+from location_api import Point3D, MCPosition
 from modern_teleport.utils import execute_if
 
 rcon_module = Literal["mcdr", "async_rcon"]
@@ -12,9 +13,10 @@ class RconManager:
     def __init__(self, module: rcon_module = "mcdr") -> None:
         self.module: rcon_module = module
 
-    @execute_if(lambda: runtime.server is not None)
+    @execute_if(lambda: runtime.server is not None and runtime.config is not None)
     def get_from_mcdr(self, command: str) -> str | None:
         assert runtime.server is not None
+        assert runtime.config is not None
         if not runtime.server.is_rcon_running():
             raise RuntimeError("rcon.mcdr.not_running")
         with ThreadPoolExecutor(max_workers=1) as executor:
@@ -22,12 +24,14 @@ class RconManager:
                 runtime.server.rcon_query, command
             )
         try:
-            result: str | None = future.result(timeout=0.5)
+            result: str | None = future.result(timeout=runtime.config.timeout.rcon_wait)
         except TimeoutError:
             runtime.server.logger.warning("rcon.timeout")
             try:
                 runtime.server._mcdr_server.connect_rcon()
-                result: str | None = future.result(timeout=5)
+                result: str | None = future.result(
+                    timeout=runtime.config.timeout.rcon_failed
+                )
             except TimeoutError:
                 raise TimeoutError("rcon.no_response")
         return result
@@ -44,3 +48,28 @@ class RconManager:
                 runtime.server.logger.warning("module.not_implemented_yet")
             # return self.get_from_async_rcon(command)
             return self.get_from_mcdr(command)
+
+    def get_online_players(self) -> list[str] | None:
+        reply: str | None = self.get("list")
+        if reply:
+            match: re.Match[str] | None = re.match(
+                r"There are \d+ of a max of \d+ players online:", reply
+            )
+            if match:
+                names_section: str = reply[match.end() :].strip()
+                online_list: list[str] = [
+                    name.strip() for name in names_section.split(",")
+                ]
+                return online_list
+
+    def get_player_pos(self, player: str) -> MCPosition | None:
+        pos_info: str | None = self.get(f"data get entity {player} Pos")
+        dim_info: str | None = self.get(f"data get entity {player} Dimension")
+        if pos_info and dim_info:
+            pos: list[str] = pos_info.split(":")[1].strip().strip("[]").split(", ")
+            position: list = [float(coord[:-1]) for coord in pos]
+            dimension = dim_info.split(": ", 1)[1].strip().strip('"')
+            return MCPosition(
+                Point3D(*position),
+                dimension,
+            )

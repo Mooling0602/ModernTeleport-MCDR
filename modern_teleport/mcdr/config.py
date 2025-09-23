@@ -13,7 +13,7 @@ class CommandNodes(Serializable):
     plugin: str = "mtp"
     back: str = "back"
     home: str = "home"
-    teleport: str = "tp"
+    teleport: str = "tpr"
     teleport_ask: str = "tpa"
     teleport_invite: str = "tph"
     warp: str = "warp"
@@ -34,13 +34,25 @@ class DataStorage(Serializable):
     world_name: str = "world"
 
 
+class OptionalAPIs(Serializable):
+    online_player_api: bool = False
+    minecraft_data_api: bool = False
+
+
+class TimeoutManager(Serializable):
+    rcon_wait: float | int = 0.5
+    rcon_failed: float | int = 5
+
+
 class MainConfig(Serializable):
     enable: bool = False
     enable_modules: PluginModules = PluginModules()
     identity_mode: Literal["name", "uuid"] = "uuid"
     rcon_support: bool = False
     rcon_module: Literal["mcdr", "async_rcon"] = "mcdr"
+    timeout: TimeoutManager = TimeoutManager()
     location_marker_as_warp: bool = False
+    optional_apis: OptionalAPIs = OptionalAPIs()
     data_storage: DataStorage = DataStorage()
 
 
@@ -92,22 +104,30 @@ def get_config(s: PluginServerInterface) -> MainConfig:
     s.logger.info("config.generate")
     _new_config: MainConfig = get_default_config()
     s.logger.info("config.auto_detect")
-    if "mg_events" in s.get_plugin_list():
+    _plugins: list[str] = s.get_plugin_list()
+    if "mg_events" in _plugins:
         s.logger.info("optional.mg_events")
         _new_config.enable_modules.back = True
-    if "async_rcon" in s.get_plugin_list():
+    if "async_rcon" in _plugins:
         s.logger.info("optional.async_rcon")
         _new_config.rcon_support = True
         _new_config.rcon_module = "async_rcon"
         _detected_async_rcon = True
-    if "location_marker" in s.get_plugin_list():
+    if "location_marker" in _plugins:
         s.logger.info("optional.location_marker")
         _new_config.location_marker_as_warp = True
         __auto_enabled_location_marker_as_warp = True
+    if "online_player_api" in _plugins:
+        s.logger.info("optional.online_player_api")
+        _new_config.optional_apis.online_player_api = True
     if s.is_server_startup() and s.is_rcon_running():
         if not _detected_async_rcon:
             s.logger.info("rcon.mcdr")
             _new_config.rcon_support = True
+    else:
+        if "minecraft_data_api" in _plugins:
+            s.logger.info("optional.minecraft_data_api")
+            _new_config.optional_apis.minecraft_data_api = True
     s.logger.info("config.detected")
     _world_dir: str | None = None
     if _server_dir:
