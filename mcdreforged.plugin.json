@@ -1,21 +1,27 @@
 {
-    "id": "modern_teleport",
-    "version": "0.0.1",
-    "name": "ModernTeleport",
-    "description": {
-        "en_us": "A modern teleport plugin with rich functional design for Minecraft servers.",
-        "zh_cn": "为 Minecraft 服务器设计的现代化传送插件，具有丰富的功能设计。"
-    },
-    "author": "Mooling0602",
-    "link": "https://github.com/Mooling0602/ModernTeleport-MCDR",
-    "dependencies": {
-        "mcdreforged": ">=2.14.1",
-        "python": ">=3.11",
-        "auto_uuid_api": ">=0.1.0",
-        "location_api": ">=0.1.0"
-    },
-    "entrypoint": "modern_teleport.mcdr",
-    "resources": [
-        "lang"
-    ]
+  "id": "modern_teleport",
+  "version": "0.0.1",
+  "name": "ModernTeleport",
+  "description": {
+    "en_us": "A modern teleport plugin with rich functional design for Minecraft servers.",
+    "zh_cn": "为 Minecraft 服务器设计的现代化传送插件，具有丰富的功能设计。"
+  },
+  "author": "Mooling0602",
+  "link": "https://github.com/Mooling0602/ModernTeleport-MCDR",
+  "dependencies": {
+    "mcdreforged": ">=2.14.1",
+    "python": ">=3.11",
+    "auto_uuid_api": ">=0.1.0",
+    "location_api": ">=0.2.0"
+  },
+  "optional_dependencies": {
+    "location_marker": "*",
+    "minecraft_data_api": "*",
+    "online_player_api": "*",
+    "guguwebui": "*"
+  },
+  "entrypoint": "modern_teleport.mcdr",
+  "resources": [
+    "lang"
+  ]
 }

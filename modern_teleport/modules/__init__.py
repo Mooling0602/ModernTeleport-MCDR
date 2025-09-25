@@ -5,8 +5,17 @@ from auto_uuid_api import is_uuid, local_api
 from location_api import Point3D, MCPosition
 from modern_teleport.utils import execute_if
 from modern_teleport.modules.rcon import RconManager
+from modern_teleport.modules.storage import DataManager
 
-rcon: RconManager = RconManager()
+rcon: RconManager | None = None
+data_mgr: DataManager | None = None
+
+
+@execute_if(lambda: runtime.config is not None and runtime.server is not None)
+def init_modules():
+    global rcon, data_mgr
+    rcon = RconManager()
+    data_mgr = DataManager()
 
 
 @execute_if(
@@ -38,6 +47,16 @@ class GetInfo:
 
     @classmethod
     @execute_if(lambda: runtime.server is not None)
+    def get_online_list(cls) -> list[str]:
+        assert runtime.server is not None
+        result = get_online_players(runtime.server)
+        if not result:
+            if rcon:
+                result = rcon.get_online_players()
+        return result if result is not None else []
+
+    @classmethod
+    @execute_if(lambda: runtime.server is not None)
     def is_player_online(cls, player: str) -> bool:  # pyright: ignore[reportRedeclaration]
         assert runtime.server is not None
         if is_uuid(player):
@@ -45,6 +64,11 @@ class GetInfo:
         if player:
             online_players: list[str] | None = get_online_players(runtime.server)
             if not online_players:
-                online_players = rcon.get_online_players()
+                if rcon:
+                    online_players = rcon.get_online_players()
                 return player in online_players if online_players else False
         return False
+
+
+if __name__ == "__main__":
+    print("This is the core module of MTP(modern_teleport).")
