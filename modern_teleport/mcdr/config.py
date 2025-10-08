@@ -50,6 +50,7 @@ class MainConfig(Serializable):
     identity_mode: Literal["name", "uuid"] = "uuid"
     rcon_support: bool = False
     rcon_module: Literal["mcdr", "async_rcon"] = "mcdr"
+    rcon_feedback: bool = True
     timeout: TimeoutManager = TimeoutManager()
     location_marker_as_warp: bool = False
     optional_apis: OptionalAPIs = OptionalAPIs()
@@ -151,5 +152,3 @@ def get_config(s: PluginServerInterface) -> MainConfig:
         return get_default_config()
     s.logger.info("config.success")
     return _new_config
-
-

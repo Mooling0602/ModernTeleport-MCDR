@@ -53,8 +53,9 @@ class RconManager:
                 runtime.server.logger.warning("module.not_implemented_yet")
             # return self.get_from_async_rcon(command)
             result = self.get_from_mcdr(command)
-        if runtime.server:
-            runtime.server.logger.info(result)
+        if runtime.server and runtime.config:
+            if runtime.config.rcon_feedback:
+                runtime.server.logger.info(result)
         return result
 
     def get_online_players(self) -> list[str] | None:
