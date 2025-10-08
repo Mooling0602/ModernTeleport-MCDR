@@ -8,10 +8,12 @@ from mcdreforged.api.all import (
     CommandSource,
     SimpleCommandBuilder,
     Text,
+    Boolean,
 )
-from location_api import MCPosition
+from location_api import MCPosition, Point3D
 from modern_teleport.modules import GetInfo
-from modern_teleport.utils import Player
+from modern_teleport.modules.tpmanager import TeleportToAny
+from modern_teleport.utils import Player, ExecSource
 from modern_teleport.mcdr.config import CommandNodes, __config_path
 from modern_teleport.mcdr.commands.utils import (
     build_exec_with_multiple_commands as build_commands,
@@ -53,6 +55,7 @@ def register_commands(s: PluginServerInterface):
     builder.arg("player", Text).suggests(
         lambda: GetInfo.get_online_list() or []
     )
+    builder.arg("to_pos", Boolean)
     build_commands(
         builder,
         [
@@ -79,6 +82,14 @@ def register_commands(s: PluginServerInterface):
         f"{_pfx}{_plg} debug locate <player>",
         _debug_on_locate_player
     )
+    build_commands(
+        builder,
+        [
+            f"{_pfx}{_plg} debug teleport <to_pos>",
+            f"{_pfx}{_plg} debug teleport <to_pos> <player>",
+        ],
+        _debug_on_teleport_player,
+    )
     builder.register(s)
 
 
@@ -97,6 +108,27 @@ def _debug_on_locate_player(src: CommandSource, ctx: CommandContext):
             src.reply(f"Dimension: {position.dimension}")
         else:
             src.reply("Failed to locate player.")
+
+
+def _debug_on_teleport_player(src: CommandSource, ctx: CommandContext):
+    teleport: TeleportToAny | None = None
+    player: str | None = ctx.get("player", None)
+    target: str | MCPosition = "Bot"
+    if ctx.get("to_pos", False):
+        target = MCPosition(Point3D(12, 64, 35), "minecraft:overworld")
+    if src.is_console:
+        teleport = TeleportToAny(ExecSource("console"))
+        teleport.set_target(target, player)
+    elif src.is_player:
+        player = src.player  # pyright: ignore[reportAttributeAccessIssue]
+        teleport = TeleportToAny(ExecSource("player", player))
+        teleport.set_target(target)
+    else:
+        src.reply("Not implemented yet.")
+        return
+    command: str | None = teleport.execute(debug=True)
+    if command:
+        src.reply(command)
 
 
 def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):

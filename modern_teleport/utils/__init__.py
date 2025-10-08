@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Literal
 from uuid import UUID
 
 from mcdreforged.api.all import (
@@ -11,7 +12,16 @@ from .execute_if import execute_if
 __all__ = [
     "Player",
     "execute_if",
+    "ExecSourceType"
 ]
+
+ExecSourceType = Literal["console", "player", "remote"]
+
+
+@dataclass
+class ExecSource:
+    source_type: ExecSourceType
+    source_name: str | None = None
 
 
 @dataclass
