@@ -86,7 +86,8 @@ def get_config(s: PluginServerInterface) -> MainConfig:
     _config: Any | None = None
     _main_dir = get_main_config_folder(s)
     _config_path = os.path.join(_main_dir, __config_path)
-    _server_dir: str | None = s.get_mcdr_config().get("working_directory", None)
+    _mcdr_config = s.get_mcdr_config()
+    _server_dir: str | None = _mcdr_config.get("working_directory", None)
     _detected_async_rcon: bool = False
     if os.path.exists(_config_path):
         s.logger.info("config.load_existing")
@@ -131,7 +132,10 @@ def get_config(s: PluginServerInterface) -> MainConfig:
     s.logger.info("config.detected")
     _world_dir: str | None = None
     if _server_dir:
-        _world_dir = os.path.join(_server_dir, _new_config.data_storage.world_name)
+        _world_dir = os.path.join(
+            _server_dir,
+            _new_config.data_storage.world_name
+        )
     if _world_dir and os.path.exists(_world_dir):
         s.logger.info("config.world_detected")
         _new_config.data_storage.save_to_world = True
@@ -147,3 +151,5 @@ def get_config(s: PluginServerInterface) -> MainConfig:
         return get_default_config()
     s.logger.info("config.success")
     return _new_config
+
+

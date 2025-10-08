@@ -1,6 +1,10 @@
 import modern_teleport.runtime as runtime
 
-from mcdreforged.api.all import PluginServerInterface, CommandSource, new_thread
+from mcdreforged.api.all import (
+    PluginServerInterface,
+    CommandSource,
+    new_thread
+)
 from auto_uuid_api import is_uuid, local_api
 from location_api import Point3D, MCPosition
 from modern_teleport.utils.execute_if import execute_if
@@ -33,11 +37,17 @@ def get_online_players_optional(s: PluginServerInterface) -> list[str] | None:
     lambda: runtime.config is not None
     and runtime.config.optional_apis.minecraft_data_api
 )
-def get_player_pos_optional(s: PluginServerInterface, player: str) -> MCPosition | None:
+def get_player_pos_optional(
+    s: PluginServerInterface, player: str
+) -> MCPosition | None:
     mc_data_api = s.get_plugin_instance("minecraft_data_api")  # type: ignore
     if mc_data_api:  # type: ignore
-        position: list | None = mc_data_api.get_player_info(player, "Pos")  # type: ignore
-        dimension: str | None = mc_data_api.get_player_info(player, "Dimension")  # type: ignore
+        position: list | None = mc_data_api.get_player_info(
+            player, "Pos"
+        )  # type: ignore
+        dimension: str | None = mc_data_api.get_player_info(
+            player, "Dimension"
+        )  # type: ignore
         if position and dimension:
             return MCPosition(Point3D(*position), dimension)
 
@@ -71,25 +81,27 @@ class GetInfo:
 
     @classmethod
     @execute_if(lambda: runtime.server is not None, True)
-    def is_player_online(cls, player: str) -> bool:  # pyright: ignore[reportRedeclaration]
+    def is_player_online(cls, player: str) -> bool:
         assert runtime.server is not None
+        _player: str | None = None
         if is_uuid(player):
-            player: str | None = local_api.get(player)
-        if player:
+            _player = local_api.get(player)
+        if _player:
             online_players: list[str] | None = get_online_players_optional(
                 runtime.server
             )
             if not online_players:
                 if rcon:
                     online_players = rcon.get_online_players()
-                return player in online_players if online_players else False
+                return _player in online_players if online_players else False
         return False
 
     @classmethod
     @execute_if(lambda: runtime.server is not None, True)
     def get_player_position(cls, player: str) -> MCPosition | None:
         assert runtime.server is not None
-        position: MCPosition | None = get_player_pos_optional(runtime.server, player)
+        position: MCPosition | None = get_player_pos_optional(
+            runtime.server, player)
         if not position:
             if rcon:
                 position = rcon.get_player_pos(player)

@@ -15,13 +15,19 @@ class MTP(StrEnum):
 
 
 class DataManager:
-    @execute_if(lambda: runtime.config is not None and runtime.server is not None, True)
+    @execute_if(
+        lambda: runtime.config is not None and runtime.server is not None,
+        True,
+    )
     def __init__(self) -> None:
         assert runtime.config is not None
         assert runtime.server is not None
         self.config: runtime.MainConfig = runtime.config
         self.server: PluginServerInterface = runtime.server
-        self.data_folder: str = os.path.join(runtime.server.get_data_folder(), "data")
+        self.data_folder: str = os.path.join(
+            runtime.server.get_data_folder(),
+            "data"
+        )
         self.world_dir: str | None = None
         self.server_dir: str | None = runtime.server.get_mcdr_config().get(
             "working_directory", None
@@ -60,7 +66,9 @@ class DataManager:
                 self.server.logger.error("data.need_name_or_uuid")
                 raise TypeError("data.need_name_or_uuid")
             return os.path.join(
-                self.data_folder, self.get_player_folder(name_or_uuid), f"{module}.json"
+                self.data_folder,
+                self.get_player_folder(name_or_uuid),
+                f"{module}.json"
             )
 
 

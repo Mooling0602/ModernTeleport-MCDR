@@ -13,7 +13,9 @@ class RconManager:
     def __init__(self, module: rcon_module = "mcdr") -> None:
         self.module: rcon_module = module
 
-    @execute_if(lambda: runtime.server is not None and runtime.config is not None)
+    @execute_if(
+        lambda: runtime.server is not None and runtime.config is not None
+    )
     def get_from_mcdr(self, command: str) -> str | None:
         assert runtime.server is not None
         assert runtime.config is not None
@@ -24,7 +26,9 @@ class RconManager:
                 runtime.server.rcon_query, command
             )
         try:
-            result: str | None = future.result(timeout=runtime.config.timeout.rcon_wait)
+            result: str | None = future.result(
+                timeout=runtime.config.timeout.rcon_wait
+            )
         except TimeoutError:
             runtime.server.logger.warning("rcon.timeout")
             try:
@@ -60,7 +64,7 @@ class RconManager:
                 r"There are \d+ of a max of \d+ players online:", reply
             )
             if match:
-                names_section: str = reply[match.end() :].strip()
+                names_section: str = reply[match.end():].strip()
                 if names_section:
                     online_list: list[str] = [
                         name.strip()
@@ -74,9 +78,12 @@ class RconManager:
     def get_player_pos(self, player: str) -> MCPosition | None:
         pos_info: str | None = self.get(f"data get entity {player} Pos")
         dim_info: str | None = self.get(f"data get entity {player} Dimension")
+        pos_info_valid: bool = (pos_info != "No entity was found")
+        dim_info_valid: bool = (dim_info != "No entity was found")
         if pos_info and dim_info:
-            if pos_info != "No entity was found" and dim_info != "No entity was found":
-                pos: list[str] = pos_info.split(":")[1].strip().strip("[]").split(", ")
+            if pos_info_valid and dim_info_valid:
+                pos_data: str = pos_info.split(":")[1].strip()
+                pos: list[str] = pos_data.strip("[]").split(", ")
                 position: list = [float(coord[:-1]) for coord in pos]
                 dimension = dim_info.split(": ", 1)[1].strip().strip('"')
                 return MCPosition(

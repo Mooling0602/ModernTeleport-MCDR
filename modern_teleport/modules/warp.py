@@ -22,5 +22,6 @@ class WarpForLoc:
         self.config: runtime.MainConfig = runtime.config
         self.server: PluginServerInterface = runtime.server
         self.enable: bool = False
-        if self.config.enable_modules.warp and self.config.location_marker_as_warp:
+        if (self.config.enable_modules.warp and
+                self.config.location_marker_as_warp):
             self.enable = True

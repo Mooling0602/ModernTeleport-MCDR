@@ -1,3 +1,4 @@
+# pyright: reportCallIssue=false
 import os
 
 from mcdreforged.api.all import (
@@ -70,13 +71,19 @@ def register_commands(s: PluginServerInterface):
         on_plugin_clean_main_config,
     )
 
-    builder.command(f"{_pfx}{_plg} debug select <player>", _debug_on_select_player)
+    builder.command(
+        f"{_pfx}{_plg} debug select <player>",
+        _debug_on_select_player
+    )
     builder.command(f"{_pfx}{_plg} debug player <player>", Player.on_debug)
     builder.command(
         f"{_pfx}{_plg} debug online",
-        lambda src: GetInfo.list_online_players(src),  # pyright: ignore[reportCallIssue]
+        lambda src: GetInfo.list_online_players(src)
     )
-    builder.command(f"{_pfx}{_plg} debug locate <player>", _debug_on_locate_player)
+    builder.command(
+        f"{_pfx}{_plg} debug locate <player>",
+        _debug_on_locate_player
+    )
     builder.register(s)
 
 

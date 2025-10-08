@@ -10,11 +10,16 @@ class ConditionError(RuntimeError):
     pass
 
 
-def execute_if(condition: bool | Callable[[], bool], raise_error: bool = False):
+def execute_if(
+    condition: bool | Callable[[], bool],
+    raise_error: bool = False
+):
     def decorator(func: Callable[P, T]) -> Callable[P, T | None]:
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T | None:
-            _condition: bool = condition() if callable(condition) else condition
+            _condition: bool = (
+                condition() if callable(condition) else condition
+            )
             if _condition:
                 return func(*args, **kwargs)
             else:
