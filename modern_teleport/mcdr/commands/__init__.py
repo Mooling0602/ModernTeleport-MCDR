@@ -50,14 +50,9 @@ def register_commands(s: PluginServerInterface):
     _plg: str = command_nodes.plugin
     _cmd: str = _pfx + _plg
     s.logger.info("register_commands")
-
-    def _get_online_list() -> list[str]:
-        result: list[str] | None = GetInfo.get_online_list()
-        if not result:
-            result = []
-        return result
-
-    builder.arg("player", Text).suggests(lambda: _get_online_list())
+    builder.arg("player", Text).suggests(
+        lambda: GetInfo.get_online_list() or []
+    )
     build_commands(
         builder,
         [
