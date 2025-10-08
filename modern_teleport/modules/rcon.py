@@ -41,13 +41,17 @@ class RconManager:
 
     @execute_if(lambda: runtime.server is not None)
     def get(self, command: str) -> str | None:
+        result: str | None = None
         if self.module == "mcdr":
-            return self.get_from_mcdr(command)
+            result = self.get_from_mcdr(command)
         elif self.module == "async_rcon":
             if runtime.server:
                 runtime.server.logger.warning("module.not_implemented_yet")
             # return self.get_from_async_rcon(command)
-            return self.get_from_mcdr(command)
+            result = self.get_from_mcdr(command)
+        if runtime.server:
+            runtime.server.logger.info(result)
+        return result
 
     def get_online_players(self) -> list[str] | None:
         reply: str | None = self.get("list")
@@ -57,19 +61,25 @@ class RconManager:
             )
             if match:
                 names_section: str = reply[match.end() :].strip()
-                online_list: list[str] = [
-                    name.strip() for name in names_section.split(",")
-                ]
+                if names_section:
+                    online_list: list[str] = [
+                        name.strip()
+                        for name in names_section.split(",")
+                        if name.strip()
+                    ]
+                else:
+                    online_list = []
                 return online_list
 
     def get_player_pos(self, player: str) -> MCPosition | None:
         pos_info: str | None = self.get(f"data get entity {player} Pos")
         dim_info: str | None = self.get(f"data get entity {player} Dimension")
         if pos_info and dim_info:
-            pos: list[str] = pos_info.split(":")[1].strip().strip("[]").split(", ")
-            position: list = [float(coord[:-1]) for coord in pos]
-            dimension = dim_info.split(": ", 1)[1].strip().strip('"')
-            return MCPosition(
-                Point3D(*position),
-                dimension,
-            )
+            if pos_info != "No entity was found" and dim_info != "No entity was found":
+                pos: list[str] = pos_info.split(":")[1].strip().strip("[]").split(", ")
+                position: list = [float(coord[:-1]) for coord in pos]
+                dimension = dim_info.split(": ", 1)[1].strip().strip('"')
+                return MCPosition(
+                    Point3D(*position),
+                    dimension,
+                )

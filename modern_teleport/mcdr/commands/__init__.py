@@ -8,7 +8,9 @@ from mcdreforged.api.all import (
     SimpleCommandBuilder,
     Text,
 )
-
+from location_api import MCPosition
+from modern_teleport.modules import GetInfo
+from modern_teleport.utils import Player
 from modern_teleport.mcdr.config import CommandNodes, __config_path
 from modern_teleport.mcdr.commands.utils import (
     build_exec_with_multiple_commands as build_commands,
@@ -47,18 +49,34 @@ def register_commands(s: PluginServerInterface):
     _plg: str = command_nodes.plugin
     _cmd: str = _pfx + _plg
     s.logger.info("register_commands")
+
+    def _get_online_list() -> list[str]:
+        result: list[str] | None = GetInfo.get_online_list()
+        if not result:
+            result = []
+        return result
+
+    builder.arg("player", Text).suggests(lambda: _get_online_list())
     build_commands(
         builder,
         [
+            f"{_cmd} delete config",
             f"{_cmd} delete config.main",
+            f"{_cmd} config reset",
             f"{_cmd} config reset main",
             f"{_cmd} delete config.main --reload",
             f"{_cmd} config reset main --reload",
         ],
         on_plugin_clean_main_config,
     )
-    builder.arg("player", Text).suggests(lambda: ["Steve", "Alex"])
+
     builder.command(f"{_pfx}{_plg} debug select <player>", _debug_on_select_player)
+    builder.command(f"{_pfx}{_plg} debug player <player>", Player.on_debug)
+    builder.command(
+        f"{_pfx}{_plg} debug online",
+        lambda src: GetInfo.list_online_players(src),  # pyright: ignore[reportCallIssue]
+    )
+    builder.command(f"{_pfx}{_plg} debug locate <player>", _debug_on_locate_player)
     builder.register(s)
 
 
@@ -66,6 +84,17 @@ def _debug_on_select_player(src: CommandSource, ctx: CommandContext):
     player: str | None = ctx.get("player", None)
     if player:
         src.reply(f"Choosing {player}")
+
+
+def _debug_on_locate_player(src: CommandSource, ctx: CommandContext):
+    player: str | None = ctx.get("player", None)
+    if player:
+        position: MCPosition | None = GetInfo.get_player_position(player)
+        if position:
+            src.reply(f"Position: {str(position.point)}")
+            src.reply(f"Dimension: {position.dimension}")
+        else:
+            src.reply("Failed to locate player.")
 
 
 def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):
@@ -78,7 +107,7 @@ def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):
         server.logger.warning("reset.confirm.config.main")
         __remove_main_config = True
         return
-    _main_dir = server.get_data_folder()
+    _main_dir: str = server.get_data_folder()
     os.remove(os.path.join(_main_dir, __config_path))
     server.logger.info("reset.file_removed")
     if "--reload" in ctx.command:

@@ -1,9 +1,9 @@
 import modern_teleport.runtime as runtime
 
-from mcdreforged.api.all import PluginServerInterface
+from mcdreforged.api.all import PluginServerInterface, CommandSource, new_thread
 from auto_uuid_api import is_uuid, local_api
 from location_api import Point3D, MCPosition
-from modern_teleport.utils import execute_if
+from modern_teleport.utils.execute_if import execute_if
 from modern_teleport.modules.rcon import RconManager
 from modern_teleport.modules.storage import DataManager
 
@@ -16,13 +16,14 @@ def init_modules():
     global rcon, data_mgr
     rcon = RconManager()
     data_mgr = DataManager()
+    print("modules.initialized")
 
 
 @execute_if(
     lambda: runtime.config is not None
     and runtime.config.optional_apis.online_player_api
 )
-def get_online_players(s: PluginServerInterface) -> list[str] | None:
+def get_online_players_optional(s: PluginServerInterface) -> list[str] | None:
     oapi = s.get_plugin_instance("online_player_api")  # type: ignore
     if oapi:
         return oapi.get_player_list()  # type: ignore
@@ -32,7 +33,7 @@ def get_online_players(s: PluginServerInterface) -> list[str] | None:
     lambda: runtime.config is not None
     and runtime.config.optional_apis.minecraft_data_api
 )
-def get_player_pos(s: PluginServerInterface, player: str) -> MCPosition | None:
+def get_player_pos_optional(s: PluginServerInterface, player: str) -> MCPosition | None:
     mc_data_api = s.get_plugin_instance("minecraft_data_api")  # type: ignore
     if mc_data_api:  # type: ignore
         position: list | None = mc_data_api.get_player_info(player, "Pos")  # type: ignore
@@ -42,33 +43,58 @@ def get_player_pos(s: PluginServerInterface, player: str) -> MCPosition | None:
 
 
 class GetInfo:
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
+    @classmethod  # pyright: ignore[reportArgumentType]
+    @new_thread("MTPRcon: get_online_players")
+    @execute_if(lambda: runtime.server is not None, True)
+    def list_online_players(cls, src: CommandSource):
+        assert runtime.server is not None
+        players: list[str] | None = cls.get_online_list()
+        if players:
+            src.reply("-----Online Players-----")
+            for i in players:
+                src.reply(f"- {i}")
+        else:
+            src.reply("No online players.")
+
     @classmethod
-    @execute_if(lambda: runtime.server is not None)
+    @execute_if(lambda: runtime.server is not None, True)
     def get_online_list(cls) -> list[str]:
         assert runtime.server is not None
-        result = get_online_players(runtime.server)
+        result: list[str] | None = get_online_players_optional(runtime.server)
         if not result:
             if rcon:
                 result = rcon.get_online_players()
         return result if result is not None else []
 
     @classmethod
-    @execute_if(lambda: runtime.server is not None)
+    @execute_if(lambda: runtime.server is not None, True)
     def is_player_online(cls, player: str) -> bool:  # pyright: ignore[reportRedeclaration]
         assert runtime.server is not None
         if is_uuid(player):
             player: str | None = local_api.get(player)
         if player:
-            online_players: list[str] | None = get_online_players(runtime.server)
+            online_players: list[str] | None = get_online_players_optional(
+                runtime.server
+            )
             if not online_players:
                 if rcon:
                     online_players = rcon.get_online_players()
                 return player in online_players if online_players else False
         return False
 
+    @classmethod
+    @execute_if(lambda: runtime.server is not None, True)
+    def get_player_position(cls, player: str) -> MCPosition | None:
+        assert runtime.server is not None
+        position: MCPosition | None = get_player_pos_optional(runtime.server, player)
+        if not position:
+            if rcon:
+                position = rcon.get_player_pos(player)
+        return position
+
 
 if __name__ == "__main__":
-    print("This is the core module of MTP(modern_teleport).")
+    print("Core module of MTP(modern_teleport).")

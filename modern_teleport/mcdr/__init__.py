@@ -14,6 +14,7 @@ from modern_teleport.mcdr.config import (
     MainConfig,
 )
 from modern_teleport.mcdr.commands import load_command_nodes, register_commands
+from modern_teleport.modules import init_modules
 
 psi: PluginServerInterface | None = None
 try:
@@ -30,3 +31,4 @@ def on_load(s: PluginServerInterface, _):
     command_nodes: CommandNodes = get_command_nodes(s)
     load_command_nodes(command_nodes)
     register_commands(s)
+    init_modules()

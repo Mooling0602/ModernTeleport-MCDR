@@ -1,1 +1,2 @@
 modern_teleport:
+  on_load: 初始消息。

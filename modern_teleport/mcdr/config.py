@@ -40,8 +40,8 @@ class OptionalAPIs(Serializable):
 
 
 class TimeoutManager(Serializable):
-    rcon_wait: float | int = 0.5
-    rcon_failed: float | int = 5
+    rcon_wait: float = 0.5
+    rcon_failed: float = 5
 
 
 class MainConfig(Serializable):
@@ -117,14 +117,14 @@ def get_config(s: PluginServerInterface) -> MainConfig:
         s.logger.info("optional.location_marker")
         _new_config.location_marker_as_warp = True
         __auto_enabled_location_marker_as_warp = True
-    if "online_player_api" in _plugins:
-        s.logger.info("optional.online_player_api")
-        _new_config.optional_apis.online_player_api = True
     if s.is_server_startup() and s.is_rcon_running():
         if not _detected_async_rcon:
             s.logger.info("rcon.mcdr")
             _new_config.rcon_support = True
     else:
+        if "online_player_api" in _plugins:
+            s.logger.info("optional.online_player_api")
+            _new_config.optional_apis.online_player_api = True
         if "minecraft_data_api" in _plugins:
             s.logger.info("optional.minecraft_data_api")
             _new_config.optional_apis.minecraft_data_api = True
