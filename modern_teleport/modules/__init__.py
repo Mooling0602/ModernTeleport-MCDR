@@ -10,17 +10,16 @@ from location_api import Point3D, MCPosition
 from modern_teleport.utils.execute_if import execute_if
 from modern_teleport.modules.rcon import RconManager
 from modern_teleport.modules.storage import DataManager
-
-rcon: RconManager | None = None
-data_mgr: DataManager | None = None
+from modern_teleport.modules.tpmanager import SessionManager
 
 
 @execute_if(lambda: runtime.config is not None and runtime.server is not None)
 def init_modules():
-    global rcon, data_mgr
-    rcon = RconManager()
-    data_mgr = DataManager()
-    print("modules.initialized")
+    assert runtime.server is not None
+    runtime.rcon = RconManager()
+    runtime.data_mgr = DataManager()
+    runtime.tp_mgr = SessionManager()
+    runtime.server.logger.info("modules.initialized")
 
 
 @execute_if(
@@ -75,15 +74,15 @@ class GetInfo:
         assert runtime.server is not None
         result: list[str] | None = get_online_players_optional(runtime.server)
         if not result:
-            if rcon:
-                result = rcon.get_online_players()
+            if runtime.rcon:
+                result = runtime.rcon.get_online_players()
         return result if result is not None else []
 
     @classmethod
     @execute_if(lambda: runtime.server is not None, True)
     def is_player_online(cls, player: str) -> bool:
         assert runtime.server is not None
-        _player: str | None = None
+        _player: str | None = player
         if is_uuid(player):
             _player = local_api.get(player)
         if _player:
@@ -91,9 +90,9 @@ class GetInfo:
                 runtime.server
             )
             if not online_players:
-                if rcon:
-                    online_players = rcon.get_online_players()
-                return _player in online_players if online_players else False
+                if runtime.rcon:
+                    online_players = runtime.rcon.get_online_players()
+                return (_player in online_players) if online_players else False
         return False
 
     @classmethod
@@ -103,8 +102,8 @@ class GetInfo:
         position: MCPosition | None = get_player_pos_optional(
             runtime.server, player)
         if not position:
-            if rcon:
-                position = rcon.get_player_pos(player)
+            if runtime.rcon:
+                position = runtime.rcon.get_player_pos(player)
         return position
 
 

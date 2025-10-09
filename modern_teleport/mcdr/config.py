@@ -42,6 +42,7 @@ class OptionalAPIs(Serializable):
 class TimeoutManager(Serializable):
     rcon_wait: float = 0.5
     rcon_failed: float = 5
+    teleport: float = 120
 
 
 class MainConfig(Serializable):

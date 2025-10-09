@@ -5,6 +5,6 @@ description = "A modern teleport plugin with rich functional design for Minecraf
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "beartype>=0.20.0",    # needed by necessary dep "location_api"
+  "beartype>=0.20.0",
   "mcdreforged>=2.14.1",
 ]

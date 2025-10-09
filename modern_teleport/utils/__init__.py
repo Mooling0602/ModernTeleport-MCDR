@@ -18,6 +18,10 @@ __all__ = [
 ExecSourceType = Literal["console", "player", "remote"]
 
 
+class FeatureDisabledError(Exception):
+    pass
+
+
 @dataclass
 class ExecSource:
     source_type: ExecSourceType

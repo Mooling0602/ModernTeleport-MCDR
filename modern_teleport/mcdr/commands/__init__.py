@@ -1,5 +1,6 @@
 # pyright: reportCallIssue=false
 import os
+import modern_teleport.runtime as runtime
 
 from mcdreforged.api.all import (
     CommandContext,
@@ -9,10 +10,15 @@ from mcdreforged.api.all import (
     SimpleCommandBuilder,
     Text,
     Boolean,
+    CommandSyntaxError,
 )
 from location_api import MCPosition, Point3D
 from modern_teleport.modules import GetInfo
-from modern_teleport.modules.tpmanager import TeleportToAny
+from modern_teleport.modules.tpmanager import (
+    TeleportToAny,
+    TeleportAsk,
+    TeleportBetweenPlayers,
+)
 from modern_teleport.utils import Player, ExecSource
 from modern_teleport.mcdr.config import CommandNodes, __config_path
 from modern_teleport.mcdr.commands.utils import (
@@ -50,9 +56,14 @@ def register_commands(s: PluginServerInterface):
         return
     _pfx: str = command_nodes.prefix
     _plg: str = command_nodes.plugin
+    _tpa: str = command_nodes.teleport_ask
+    _tpr: str = command_nodes.teleport
     _cmd: str = _pfx + _plg
     s.logger.info("register_commands")
     builder.arg("player", Text).suggests(
+        lambda: GetInfo.get_online_list() or []
+    )
+    builder.arg("target", Text).suggests(
         lambda: GetInfo.get_online_list() or []
     )
     builder.arg("to_pos", Boolean)
@@ -90,7 +101,78 @@ def register_commands(s: PluginServerInterface):
         ],
         _debug_on_teleport_player,
     )
+    build_commands(
+        builder,
+        [
+            f"{_pfx}{_tpa} <player> <target>",
+            f"{_pfx}{_tpa} <player>"
+        ],
+        _testing_tpa_command
+    )
+    build_commands(
+        builder,
+        [
+            f"{_pfx}{_tpr} accept",
+            f"{_pfx}{_tpr} accept <target>"
+        ],
+        _testing_tpr_accept_command
+    )
     builder.register(s)
+
+
+def _testing_tpa_command(src: CommandSource, ctx: CommandContext):
+    target: str | None = ctx.get("target", None)
+    player: str | None = ctx.get("player")
+    source_player: str | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType] # noqa: E501
+    if not player:
+        raise CommandSyntaxError("failed to parse argument `player`.")
+    if not GetInfo.is_player_online(player):
+        src.reply("player_offline")
+        return
+    if target:
+        if not src.has_permission_higher_than(3):
+            src.reply("permission_denied")
+            return
+        if not GetInfo.is_player_online(target):
+            src.reply("player_offline")
+            return
+        tpa_request: TeleportBetweenPlayers = TeleportAsk(
+            ExecSource("player", target)
+        )
+        tpa_request.set_target(player)
+    else:
+        if src.is_player:
+            source_player = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+        else:
+            src.reply("missing_argument_target")
+            return
+        tpa_request: TeleportBetweenPlayers = TeleportAsk(
+            ExecSource("player", source_player)
+        )
+        tpa_request.set_target(player)
+    if runtime.tp_mgr:
+        runtime.tp_mgr += tpa_request
+    src.reply("tpa.create_request")
+
+
+def _testing_tpr_accept_command(src: CommandSource, ctx: CommandContext):
+    target: str | None = ctx.get("target", None)
+    if target:
+        if not GetInfo.is_player_online(target):
+            src.reply("player_offline")
+            return
+        if not src.has_permission_higher_than(3):
+            src.reply("permission_denied")
+            return
+        if runtime.tp_mgr:
+            runtime.tp_mgr.find_run_task(target)
+    else:
+        if not src.is_player:
+            src.reply("missing_augument_target")
+            return
+        player: str = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+        if runtime.tp_mgr:
+            runtime.tp_mgr.find_run_task(player)
 
 
 def _debug_on_select_player(src: CommandSource, ctx: CommandContext):

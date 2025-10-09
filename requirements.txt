@@ -1,2 +1,2 @@
 mcdreforged>=2.14.1
-beartype>=0.20.0  # needed by necessary dep "location_api"
+beartype>=0.20.0
