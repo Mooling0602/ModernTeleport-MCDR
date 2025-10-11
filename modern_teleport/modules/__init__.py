@@ -3,14 +3,14 @@ import modern_teleport.runtime as runtime
 from mcdreforged.api.all import (
     PluginServerInterface,
     CommandSource,
-    new_thread
+    new_thread,
 )
 from auto_uuid_api import is_uuid, local_api
 from location_api import Point3D, MCPosition
 from modern_teleport.utils.execute_if import execute_if
-from modern_teleport.modules.rcon import RconManager
-from modern_teleport.modules.storage import DataManager
-from modern_teleport.modules.tpmanager import SessionManager
+from .rcon import RconManager
+from .storage import DataManager
+from .tpmanager import SessionManager
 
 
 @execute_if(lambda: runtime.config is not None and runtime.server is not None)
@@ -41,12 +41,14 @@ def get_player_pos_optional(
 ) -> MCPosition | None:
     mc_data_api = s.get_plugin_instance("minecraft_data_api")  # type: ignore
     if mc_data_api:  # type: ignore
+        # fmt: off
         position: list | None = mc_data_api.get_player_info(
-            player, "Pos"
+            player, "Pos",
         )  # type: ignore
         dimension: str | None = mc_data_api.get_player_info(
             player, "Dimension"
         )  # type: ignore
+        # fmt: off
         if position and dimension:
             return MCPosition(Point3D(*position), dimension)
 
@@ -100,7 +102,8 @@ class GetInfo:
     def get_player_position(cls, player: str) -> MCPosition | None:
         assert runtime.server is not None
         position: MCPosition | None = get_player_pos_optional(
-            runtime.server, player)
+            runtime.server, player
+        )
         if not position:
             if runtime.rcon:
                 position = runtime.rcon.get_player_pos(player)
