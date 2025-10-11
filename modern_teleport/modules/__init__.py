@@ -7,6 +7,7 @@ from mcdreforged.api.all import (
 )
 from auto_uuid_api import is_uuid, local_api
 from location_api import Point3D, MCPosition
+from modern_teleport.utils import Player
 from modern_teleport.utils.execute_if import execute_if
 from .rcon import RconManager
 from .storage import DataManager
@@ -20,6 +21,22 @@ def init_modules():
     runtime.data_mgr = DataManager()
     runtime.tp_mgr = SessionManager()
     runtime.server.logger.info("modules.initialized")
+
+
+@execute_if(
+    lambda: runtime.server is not None and runtime.config is not None, True
+)
+def init_online_players(s: PluginServerInterface):
+    _online_players = GetInfo.get_online_list()
+    online_players: list[Player] = []
+    if _online_players:
+        for i in _online_players:
+            uuid: str | None = local_api.get(i)
+            if not uuid:
+                raise ValueError(f"uuid not found for {i}")
+            player = Player(i, uuid)
+            online_players.append(player)
+    runtime.rcon_online_players = online_players
 
 
 @execute_if(

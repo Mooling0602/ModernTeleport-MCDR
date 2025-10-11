@@ -1,7 +1,9 @@
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from mcdreforged.api.all import PluginServerInterface
     from modern_teleport.mcdr.config import MainConfig
+    from modern_teleport.utils import Player
     from modern_teleport.modules.rcon import RconManager
     from modern_teleport.modules.storage import DataManager
     from modern_teleport.modules.tpmanager import SessionManager
@@ -14,6 +16,7 @@ server: PluginServerInterface | None = None
 rcon: RconManager | None = None
 data_mgr: DataManager | None = None
 tp_mgr: SessionManager | None = None
+rcon_online_players: list[Player] | None = None
 
 
 def load_config(cfg: MainConfig):

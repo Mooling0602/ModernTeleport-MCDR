@@ -3,6 +3,7 @@ import modern_teleport.runtime as runtime
 from mcdreforged.api.all import (
     PluginServerInterface,
     ServerInterface,
+    Info,
     # new_thread,
     # spam_proof,
 )
@@ -32,3 +33,11 @@ def on_load(s: PluginServerInterface, _):
     load_command_nodes(command_nodes)
     register_commands(s)
     init_modules()
+
+
+def on_player_joined(server: PluginServerInterface, player: str, info: Info):
+    pass
+
+
+def on_player_left(server: PluginServerInterface, player: str):
+    pass

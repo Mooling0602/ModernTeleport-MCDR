@@ -1,19 +1,17 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 from uuid import UUID
 
-from mcdreforged.api.all import (
-    CommandContext,
-    CommandSource,
-)
 from auto_uuid_api import is_uuid, local_api
 from .execute_if import execute_if
 
-__all__ = [
-    "Player",
-    "execute_if",
-    "ExecSourceType"
-]
+if TYPE_CHECKING:
+    from mcdreforged.api.all import (
+        CommandContext,
+        CommandSource,
+    )
+
+__all__ = ["Player", "execute_if", "ExecSourceType"]
 
 ExecSourceType = Literal["console", "player", "remote"]
 
