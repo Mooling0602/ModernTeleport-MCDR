@@ -19,6 +19,7 @@ from modern_teleport.modules.tpmanager import (
     TeleportAsk,
     TeleportBetweenPlayers,
 )
+from modern_teleport.modules.tpmanager_async import TeleportRequest
 from modern_teleport.utils import Player, ExecSource
 from modern_teleport.mcdr.config import CommandNodes, __config_path
 from modern_teleport.mcdr.commands.utils import (
@@ -81,17 +82,17 @@ def register_commands(s: PluginServerInterface):
     )
 
     builder.command(
-        f"{_pfx}{_plg} debug select <player>",
-        _debug_on_select_player
+        f"{_pfx}{_plg} debug select <player>", _debug_on_select_player
     )
-    builder.command(f"{_pfx}{_plg} debug player <player>", Player.on_debug)
+    builder.command(
+        f"{_pfx}{_plg} debug player <player>", Player.on_debug_command
+    )
     builder.command(
         f"{_pfx}{_plg} debug online",
-        lambda src: GetInfo.list_online_players(src)
+        lambda src: GetInfo.list_online_players(src),
     )
     builder.command(
-        f"{_pfx}{_plg} debug locate <player>",
-        _debug_on_locate_player
+        f"{_pfx}{_plg} debug locate <player>", _debug_on_locate_player
     )
     build_commands(
         builder,
@@ -103,26 +104,109 @@ def register_commands(s: PluginServerInterface):
     )
     build_commands(
         builder,
-        [
-            f"{_pfx}{_tpa} <player> <target>",
-            f"{_pfx}{_tpa} <player>"
-        ],
-        _testing_tpa_command
+        [f"{_pfx}{_tpa} <player> <target>", f"{_pfx}{_tpa} <player>"],
+        _testing_tpa_command,
+    )
+    build_commands(
+        builder,
+        [f"{_pfx}{_tpr} accept", f"{_pfx}{_tpr} accept <target>"],
+        _testing_tpr_accept_command,
     )
     build_commands(
         builder,
         [
-            f"{_pfx}{_tpr} accept",
-            f"{_pfx}{_tpr} accept <target>"
+            f"{_pfx}async:{_tpa} <player>",
+            f"{_pfx}async:{_tpa} <player> <target>",
         ],
-        _testing_tpr_accept_command
+        _testing_async_tpa_command,
+    )
+    build_commands(
+        builder,
+        [
+            f"{_pfx}async:{_tpr} accept",
+            f"{_pfx}async:{_tpr} accept <target>",
+            f"{_pfx}async:{_tpr} reject",
+            f"{_pfx}async:{_tpr} reject <target>",
+            f"{_pfx}async:{_tpr} cancel",
+            f"{_pfx}async:{_tpr} cancel <target>",
+        ],
+        _testing_async_tpr_command,
     )
     builder.register(s)
 
 
+def get_player_names(
+    src: CommandSource, ctx: CommandContext
+) -> tuple[str, str | None]:
+    selected_player: str | None = ctx.get("player", None)
+    if not selected_player:
+        raise CommandSyntaxError("failed to parse argument `player`.")
+    target_player: str | None = ctx.get("target", None)
+    return selected_player, target_player
+
+
+async def _testing_async_tpa_command(src: CommandSource, ctx: CommandContext):
+    if not runtime.async_tp_mgr:
+        src.reply("AsyncSessionManager is not running...")
+        return
+    selected_player, target_player = get_player_names(src, ctx)
+    if not target_player:
+        target_player = selected_player
+        if not src.is_player:
+            src.reply("missing_argument_target")
+            return
+        selected_player = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+    # if not GetInfo.is_player_online(
+    #     selected_player
+    # ) or not GetInfo.is_player_online(target_player):
+    #     src.reply("player_not_online")
+    #     return
+    request = TeleportRequest(
+        get_psi(src),
+        "ask",
+        selected_player,
+        target_player,
+    )
+    runtime.async_tp_mgr.schedule_add(request)
+
+
+async def _testing_async_tpr_command(src: CommandSource, ctx: CommandContext):
+    if not runtime.async_tp_mgr:
+        src.reply("AsyncSessionManager is not running...")
+        return
+    _target_player: str | None = ctx.get("target", None)
+    if not _target_player:
+        if not src.is_player:
+            src.reply("missing_argument_target")
+            return
+        target_player: str = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+    else:
+        target_player: str = _target_player
+    # if not GetInfo.is_player_online(target_player):
+    #     src.reply("player_not_online")
+    #     return
+    if "accept" in ctx.command:
+        runtime.async_tp_mgr.confirm_latest_request(
+            target_player,
+            "accept",
+        )
+    elif "reject" in ctx.command:
+        runtime.async_tp_mgr.confirm_latest_request(
+            target_player,
+            "reject",
+        )
+    elif "cancel" in ctx.command:
+        runtime.async_tp_mgr.confirm_latest_request(
+            target_player,
+            "cancel",
+        )
+    else:
+        raise CommandSyntaxError("failed to parse a valid option.")
+
+
 def _testing_tpa_command(src: CommandSource, ctx: CommandContext):
     target: str | None = ctx.get("target", None)
-    player: str | None = ctx.get("player")
+    player: str | None = ctx.get("player", None)
     source_player: str | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType] # noqa: E501
     if not player:
         raise CommandSyntaxError("failed to parse argument `player`.")

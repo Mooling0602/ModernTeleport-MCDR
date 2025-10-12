@@ -41,3 +41,8 @@ def on_player_joined(server: PluginServerInterface, player: str, info: Info):
 
 def on_player_left(server: PluginServerInterface, player: str):
     pass
+
+
+def on_unload(server: PluginServerInterface):
+    if runtime.async_tp_mgr:
+        runtime.async_tp_mgr.cancel_all_requests()

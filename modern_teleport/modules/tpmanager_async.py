@@ -1,36 +1,33 @@
 import asyncio
 import modern_teleport.runtime as runtime
 
-from typing import Literal, TYPE_CHECKING
-from beartype import beartype
+from datetime import datetime
+from typing import Literal
 
-from modern_teleport.utils import Player
-
-if TYPE_CHECKING:
-    from mcdreforged.api.all import (
-        PluginServerInterface,
-    )
+from mcdreforged.api.all import PluginServerInterface
 
 _TeleportType = Literal["ask", "invite", "position"]
+TeleportRequestOptions = Literal["accept", "reject", "cancel"]
 
 
-@beartype
 def get_teleport_command(tp_type: _TeleportType, prefix_slash: bool = False):
     prefix: str = ""
     if prefix_slash:
         prefix = "/"
     if tp_type == "ask":
-        return "{prefix}tp {selected_player} {target_player}".format(  # noqa: F524, E501
+        return "{prefix}tp {{selected_player}} {{target_player}}".format(  # noqa: F524, E501
             prefix=prefix
         )
     elif tp_type == "invite":
-        return "{prefix}tp {target_player} {selected_player}".format(  # noqa: F524, E501
+        return "{prefix}tp {{target_player}} {{selected_player}}".format(  # noqa: F524, E501
+            prefix=prefix
+        )
+    elif tp_type == "position":
+        return "{prefix}tp {{position}}".format(  # noqa: F524, E501
             prefix=prefix
         )
     else:
-        return "{prefix}tp {position}".format(  # noqa: F524, E501
-            prefix=prefix
-        )
+        raise TypeError("Invalid teleport type")
 
 
 class TeleportRequest:
@@ -38,8 +35,8 @@ class TeleportRequest:
         self,
         server: PluginServerInterface,
         tp_type: _TeleportType,
-        selected_player: Player | str,
-        target_player: Player | str,
+        selected_player: str,
+        target_player: str,
     ):
         if tp_type == "position":
             raise TypeError(
@@ -52,53 +49,42 @@ class TeleportRequest:
         self.tp_task: asyncio.Task | None = None
         self.wait_confirm: asyncio.Future = asyncio.Future()
         self._command_format: str = get_teleport_command(tp_type)
-        _selected_player: str = ""
-        _target_player: str = ""
-        if isinstance(selected_player, Player):
-            _selected_player = str(selected_player.uuid)
-        if isinstance(target_player, Player):
-            _target_player = str(target_player.uuid)
-        if isinstance(selected_player, str):
-            _selected_player = selected_player
-        if isinstance(target_player, str):
-            _target_player = target_player
-        self.selected_player: str = _selected_player
-        self.target_player: str = _target_player
+        self.selected_player: str = selected_player
+        self.target_player: str = target_player
         self.command: str = self._command_format.format(
             selected_player=self.selected_player,
             target_player=self.target_player,
         )
+        self.start_time: datetime | None = None
 
     async def set_task(self):
         assert runtime.config is not None
+        self.start_time = datetime.now()
         timeout: float = runtime.config.timeout.teleport
         self.tp_task = asyncio.create_task(
             asyncio.wait_for(fut=self.wait_confirm, timeout=timeout)
         )
 
-        def handle_timeout(task: asyncio.Task):
-            exception: BaseException | None = task.exception()
-            if exception is not None:
-                if isinstance(exception, asyncio.TimeoutError):
-                    self.when_timeout()
-                elif isinstance(exception, asyncio.CancelledError):
-                    pass
-                else:
-                    raise exception
-
-        self.tp_task.add_done_callback(handle_timeout)
+        self.s.tell(self.target_player, "tpr.receive")
 
     def accept(self):
         if not self.wait_confirm.done():
             self.wait_confirm.set_result(True)
+            self.s.tell(self.target_player, "tpr.accept")
+            self.s.tell(self.selected_player, "tpr.accepted")
 
     def reject(self):
         if not self.wait_confirm.done():
             self.wait_confirm.set_result(False)
+            self.s.tell(self.target_player, "tpr.reject")
+            self.s.tell(self.selected_player, "tpr.rejected")
 
     def cancel(self):
         if not self.wait_confirm.done():
             self.wait_confirm.cancel()
+            if self.s.is_server_running():
+                self.s.tell(self.target_player, "tpr.cancel")
+                self.s.tell(self.selected_player, "tpr.cancelled")
 
     async def wait_for_target_player(self) -> bool:
         try:
@@ -113,9 +99,26 @@ class TeleportRequest:
         except asyncio.TimeoutError:
             self.when_timeout()
             return False
+        except asyncio.CancelledError:
+            self.when_cancelled()
+            return False
 
     def when_timeout(self):
         self.s.logger.error("tpr.timeout")
+        self.s.tell(self.selected_player, "tpr.timeout")
+        self.s.tell(self.target_player, "tpr.timeout")
+
+    def when_cancelled(self):
+        if self.tp_type == "ask":
+            self.s.logger.error(
+                f"tpr.cancelled_by_unload: {self.selected_player}"
+                f" -> {self.target_player}"
+            )
+        else:
+            self.s.logger.error(
+                f"tpr.cancelled_by_unload: {self.target_player}"
+                f" -> {self.selected_player}"
+            )
 
 
 class AsyncSessionManager:
@@ -123,3 +126,65 @@ class AsyncSessionManager:
         self.server: PluginServerInterface = server
         self.s = self.server  # alias
         self.tp_tasks: list[TeleportRequest] = []
+
+    async def add(self, tp_task: TeleportRequest):
+        if len(self.tp_tasks) > 0:
+            # 比较现有请求中有没有selected_player和target_player和当前请求一样的（包括反过来的情况）
+            # 如果有，直接返回False
+            for i in self.tp_tasks:
+                if (
+                    i.selected_player.lower()
+                    == tp_task.selected_player.lower()
+                    and i.target_player.lower()
+                    == tp_task.target_player.lower()
+                ) or (
+                    i.selected_player.lower() == tp_task.target_player.lower()
+                    and i.target_player.lower()
+                    == tp_task.selected_player.lower()
+                ):
+                    self.s.tell(tp_task.selected_player, "tpr.exists")
+                    self.s.logger.warning("tpr.exists")
+                    return
+        self.tp_tasks.append(tp_task)
+        try:
+            await tp_task.set_task()
+            await tp_task.wait_for_target_player()
+        finally:
+            if tp_task in self.tp_tasks:
+                self.tp_tasks.remove(tp_task)
+
+    def schedule_add(self, tp_task: TeleportRequest):
+        async def add_task():
+            await self.add(tp_task)
+
+        self.s.schedule_task(add_task())
+
+    def confirm_latest_request(
+        self, target_player: str, option: TeleportRequestOptions
+    ):
+        tasks_to_do: list[TeleportRequest] = []
+        for i in self.tp_tasks:
+            if i.target_player.lower() == target_player.lower():
+                tasks_to_do.append(i)
+
+        if not tasks_to_do:
+            return
+
+        latest_task: TeleportRequest = max(
+            tasks_to_do,
+            key=lambda task: task.start_time
+            if task.start_time
+            else datetime.min,
+        )
+        if option == "accept":
+            latest_task.accept()
+        elif option == "reject":
+            latest_task.reject()
+        elif option == "cancel":
+            latest_task.cancel()
+        else:
+            raise ValueError(f"Invalid option: {option}")
+
+    def cancel_all_requests(self):
+        for i in self.tp_tasks:
+            i.cancel()

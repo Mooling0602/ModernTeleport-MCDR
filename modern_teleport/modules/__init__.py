@@ -9,9 +9,10 @@ from auto_uuid_api import is_uuid, local_api
 from location_api import Point3D, MCPosition
 from modern_teleport.utils import Player
 from modern_teleport.utils.execute_if import execute_if
-from .rcon import RconManager
-from .storage import DataManager
-from .tpmanager import SessionManager
+from modern_teleport.modules.rcon import RconManager
+from modern_teleport.modules.storage import DataManager
+from modern_teleport.modules.tpmanager import SessionManager
+from modern_teleport.modules.tpmanager_async import AsyncSessionManager
 
 
 @execute_if(lambda: runtime.config is not None and runtime.server is not None)
@@ -20,6 +21,7 @@ def init_modules():
     runtime.rcon = RconManager()
     runtime.data_mgr = DataManager()
     runtime.tp_mgr = SessionManager()
+    runtime.async_tp_mgr = AsyncSessionManager(runtime.server)
     runtime.server.logger.info("modules.initialized")
 
 
