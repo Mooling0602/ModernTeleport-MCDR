@@ -43,18 +43,17 @@ class DataManager:
             )
 
     def get_player_folder(self, name_or_uuid: str) -> str:
+        assert runtime.config is not None
         if is_uuid(name_or_uuid):
             return os.path.join(self.data_folder, name_or_uuid)
         else:
+            if runtime.config.identity_mode == "name":
+                return os.path.join(self.data_folder, name_or_uuid)
             _uuid: str | None = local_api.get_uuid(name_or_uuid)
             if _uuid:
                 return os.path.join(self.data_folder, _uuid)
             else:
-                if self.config.identity_mode != "uuid":
-                    self.server.logger.warning("data.no_uuid")
-                    return os.path.join(self.data_folder, name_or_uuid)
-                else:
-                    raise RuntimeError("error.no_uuid")
+                raise RuntimeError("error.no_uuid")
 
     def get_data_file_path(
         self, module: MTP, name_or_uuid: str | None = None

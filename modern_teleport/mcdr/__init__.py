@@ -4,10 +4,11 @@ from mcdreforged.api.all import (
     PluginServerInterface,
     ServerInterface,
     Info,
+    event_listener
     # new_thread,
     # spam_proof,
 )
-
+from location_api import MCPosition
 from modern_teleport.mcdr.config import (
     CommandNodes,
     get_command_nodes,
@@ -15,7 +16,8 @@ from modern_teleport.mcdr.config import (
     MainConfig,
 )
 from modern_teleport.mcdr.commands import load_command_nodes, register_commands
-from modern_teleport.modules import init_modules
+from modern_teleport.modules import init_modules, GetInfo
+from modern_teleport.utils.execute_if import execute_if
 
 psi: PluginServerInterface | None = None
 try:
@@ -39,8 +41,24 @@ def on_player_joined(server: PluginServerInterface, player: str, info: Info):
     pass
 
 
+@event_listener("PlayerDeathEvent")
+def on_player_death(
+    server: PluginServerInterface,
+    player: str,
+    event: str,
+    content: list
+):
+    death_position: MCPosition | None = GetInfo.get_player_position(player)
+    if death_position:
+        runtime.last_death_positions.update({player: death_position})
+
+
+@execute_if(lambda: runtime.async_tp_mgr is not None)
 def on_player_left(server: PluginServerInterface, player: str):
-    pass
+    assert runtime.async_tp_mgr is not None
+    for i in runtime.async_tp_mgr.tp_tasks:
+        if i.target_player == player or i.selected_player == player:
+            i.cancel()
 
 
 def on_unload(server: PluginServerInterface):

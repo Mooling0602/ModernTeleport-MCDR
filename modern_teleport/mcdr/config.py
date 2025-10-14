@@ -48,7 +48,7 @@ class TimeoutManager(Serializable):
 class MainConfig(Serializable):
     enable: bool = False
     enable_modules: PluginModules = PluginModules()
-    identity_mode: Literal["name", "uuid"] = "uuid"
+    identity_mode: Literal["name", "uuid"] = "name"
     rcon_support: bool = False
     rcon_module: Literal["mcdr", "async_rcon"] = "mcdr"
     rcon_feedback: bool = True

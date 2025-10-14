@@ -79,7 +79,7 @@ class TeleportRequest:
             self.s.tell(self.target_player, "tpr.reject")
             self.s.tell(self.selected_player, "tpr.rejected")
 
-    def cancel(self):
+    def cancel(self, reason: str | None = None):
         if not self.wait_confirm.done():
             self.wait_confirm.cancel()
             if self.s.is_server_running():

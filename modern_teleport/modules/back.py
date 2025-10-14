@@ -5,5 +5,5 @@ class DeathManager:
     pass
 
 
-class BackManager:
+class BacktrackManager:
     pass

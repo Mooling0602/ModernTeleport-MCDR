@@ -116,7 +116,9 @@ def register_commands(s: PluginServerInterface):
         builder,
         [
             f"{_pfx}async:{_tpa} <player>",
+            f"{_pfx}async:{_tpa} <player> --debug",
             f"{_pfx}async:{_tpa} <player> <target>",
+            f"{_pfx}async:{_tpa} <player> <target> --debug"
         ],
         _testing_async_tpa_command,
     )
@@ -156,17 +158,20 @@ async def _testing_async_tpa_command(src: CommandSource, ctx: CommandContext):
             src.reply("missing_argument_target")
             return
         selected_player = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
-    # if not GetInfo.is_player_online(
-    #     selected_player
-    # ) or not GetInfo.is_player_online(target_player):
-    #     src.reply("player_not_online")
-    #     return
     request = TeleportRequest(
         get_psi(src),
         "ask",
         selected_player,
         target_player,
     )
+    if not GetInfo.is_player_online(
+        selected_player
+    ) or not GetInfo.is_player_online(target_player):
+        if "--debug" not in ctx.command:
+            src.reply("player_not_online")
+            return
+        src.reply(f"> {request.command}")
+        return
     runtime.async_tp_mgr.schedule_add(request)
 
 

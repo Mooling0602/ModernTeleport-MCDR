@@ -15,10 +15,10 @@
     "location_api": ">=0.2.0"
   },
   "optional_dependencies": {
-    "location_marker": "*",
-    "minecraft_data_api": "*",
-    "online_player_api": "*",
-    "guguwebui": "*"
+    "location_marker": ">=1.3.1",
+    "minecraft_data_api": ">=1.6.1",
+    "online_player_api": ">=1.0.0",
+    "auto_uuid_api": ">=0.1.0"
   },
   "entrypoint": "modern_teleport.mcdr",
   "resources": [

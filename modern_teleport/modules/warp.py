@@ -1,6 +1,7 @@
 import modern_teleport.runtime as runtime
 
 from mcdreforged.api.all import PluginServerInterface
+from modern_teleport.utils.execute_if import execute_if
 
 
 class WarpManager:
@@ -14,14 +15,17 @@ class WarpShare:
 
 
 class WarpForLoc:
-    def __init__(self) -> None:
-        if not runtime.config:
-            raise RuntimeError("error.config_not_loaded")
-        if not runtime.server:
-            raise RuntimeError("error.need_mcdr_server")
-        self.config: runtime.MainConfig = runtime.config
-        self.server: PluginServerInterface = runtime.server
-        self.enable: bool = False
-        if (self.config.enable_modules.warp and
-                self.config.location_marker_as_warp):
-            self.enable = True
+    """Use [LocationMarker](https://github.com/TISUnion/LocationMarker) as \
+    public waypoints manager.
+    """
+    @execute_if(
+        lambda:
+        runtime.config is not None
+        and runtime.config.enable_modules.warp is True
+        and runtime.config.location_marker_as_warp is True,
+        True
+    )
+    def __init__(self, server: PluginServerInterface):
+        assert runtime.config is not None
+        self.server: PluginServerInterface = server
+        self.s = self.server
