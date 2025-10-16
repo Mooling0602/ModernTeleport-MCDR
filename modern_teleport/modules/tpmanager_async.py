@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Literal
 
 from mcdreforged.api.all import PluginServerInterface
+from location_api import MCPosition, Point3D
 
 _TeleportType = Literal["ask", "invite", "position"]
 TeleportRequestOptions = Literal["accept", "reject", "cancel"]
@@ -28,6 +29,62 @@ def get_teleport_command(tp_type: _TeleportType, prefix_slash: bool = False):
         )
     else:
         raise TypeError("Invalid teleport type")
+
+
+class TeleportPosition:
+    def __init__(
+        self,
+        server: PluginServerInterface,
+        target_player: str | None = None,
+        po: MCPosition | Point3D | None = None
+    ):
+        self.server: PluginServerInterface = server
+        self.s = server
+        self.target_player: str | None = target_player
+        self.po: MCPosition | Point3D | None = None
+        self.command: str | None = None
+
+    def set_target(self, target_player: str):
+        self.target_player = target_player
+
+    def set_position(self, po: MCPosition | Point3D):
+        self.po = po
+
+    def get_command(self) -> str:
+        if not self.target_player:
+            raise TypeError(
+                "No valid player name given. Please `set_target` first."
+            )
+        if not self.po:
+            raise TypeError(
+                "No valid position given. Please `set_position` first."
+            )
+        if isinstance(self.po, MCPosition):
+            return (
+                f"execute in {self.po.dimension} run tp "
+                f"{self.target_player} {self.po.point.x} "
+                f"{self.po.point.y} {self.po.point.z}"
+            )
+        elif isinstance(self.po, Point3D):
+            return (
+                f"tp {self.target_player} {self.po.x} {self.po.y} {self.po.z}"
+            )
+        else:
+            raise TypeError("No valid position given.")
+
+    def execute(self, debug: bool = False, src_player: str | None = None):
+        command: str = self.get_command()
+        if "execute" not in command:
+            self.s.logger.warning(
+                "No dimension given, will teleport the player only "
+                "in the current dimension."
+            )
+        if debug:
+            self.s.logger.info(f"> {command}")
+            if src_player:
+                self.s.tell(src_player, f"> {command}")
+        else:
+            self.s.execute(command)
 
 
 class TeleportRequest:
@@ -129,8 +186,6 @@ class AsyncSessionManager:
 
     async def add(self, tp_task: TeleportRequest):
         if len(self.tp_tasks) > 0:
-            # 比较现有请求中有没有selected_player和target_player和当前请求一样的（包括反过来的情况）
-            # 如果有，直接返回False
             for i in self.tp_tasks:
                 if (
                     i.selected_player.lower()

@@ -1,7 +1,7 @@
 import modern_teleport.runtime as runtime
 
 from mcdreforged.api.all import PluginServerInterface
-from modern_teleport.utils.execute_if import execute_if
+from modern_teleport.utils import execute_if
 
 
 class WarpManager:

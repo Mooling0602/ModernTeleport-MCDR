@@ -14,16 +14,15 @@ from mcdreforged.api.all import (
 )
 from location_api import MCPosition, Point3D
 from modern_teleport.modules import GetInfo
-from modern_teleport.modules.tpmanager import (
-    TeleportToAny,
-    TeleportAsk,
-    TeleportBetweenPlayers,
+from modern_teleport.modules.tpmanager_async import (
+    TeleportRequest,
+    TeleportPosition,
 )
-from modern_teleport.modules.tpmanager_async import TeleportRequest
-from modern_teleport.utils import Player, ExecSource
+from modern_teleport.utils import Player, tr
 from modern_teleport.mcdr.config import CommandNodes, __config_path
 from modern_teleport.mcdr.commands.utils import (
     build_exec_with_multiple_commands as build_commands,
+    auto_get_player_from_src as get_player,
 )
 
 builder: SimpleCommandBuilder | None = SimpleCommandBuilder()
@@ -71,66 +70,58 @@ def register_commands(s: PluginServerInterface):
     build_commands(
         builder,
         [
-            f"{_cmd} delete config",
-            f"{_cmd} delete config.main",
             f"{_cmd} config reset",
+            f"{_cmd} config reset --reload",
             f"{_cmd} config reset main",
-            f"{_cmd} delete config.main --reload",
             f"{_cmd} config reset main --reload",
         ],
         on_plugin_clean_main_config,
     )
-
     builder.command(
-        f"{_pfx}{_plg} debug select <player>", _debug_on_select_player
+        f"{_cmd} debug player <player>", Player.on_debug_command
     )
     builder.command(
-        f"{_pfx}{_plg} debug player <player>", Player.on_debug_command
-    )
-    builder.command(
-        f"{_pfx}{_plg} debug online",
+        f"{_cmd} debug online",
         lambda src: GetInfo.list_online_players(src),
     )
     builder.command(
-        f"{_pfx}{_plg} debug locate <player>", _debug_on_locate_player
+        f"{_cmd} debug locate <player>", _debug_on_locate_player
     )
     build_commands(
         builder,
         [
-            f"{_pfx}{_plg} debug teleport <to_pos>",
-            f"{_pfx}{_plg} debug teleport <to_pos> <player>",
+            f"{_cmd} debug query death",
+            f"{_cmd} debug query death <player>"
+        ],
+        _debug_on_query_player_death
+    )
+    build_commands(
+        builder,
+        [
+            f"{_cmd} debug teleport",
+            f"{_cmd} debug teleport <player>",
         ],
         _debug_on_teleport_player,
     )
     build_commands(
         builder,
-        [f"{_pfx}{_tpa} <player> <target>", f"{_pfx}{_tpa} <player>"],
-        _testing_tpa_command,
-    )
-    build_commands(
-        builder,
-        [f"{_pfx}{_tpr} accept", f"{_pfx}{_tpr} accept <target>"],
-        _testing_tpr_accept_command,
-    )
-    build_commands(
-        builder,
         [
-            f"{_pfx}async:{_tpa} <player>",
-            f"{_pfx}async:{_tpa} <player> --debug",
-            f"{_pfx}async:{_tpa} <player> <target>",
-            f"{_pfx}async:{_tpa} <player> <target> --debug"
+            f"{_pfx}{_tpa} <player>",
+            f"{_pfx}{_tpa} <player> --debug",
+            f"{_pfx}{_tpa} <player> <target>",
+            f"{_pfx}{_tpa} <player> <target> --debug"
         ],
         _testing_async_tpa_command,
     )
     build_commands(
         builder,
         [
-            f"{_pfx}async:{_tpr} accept",
-            f"{_pfx}async:{_tpr} accept <target>",
-            f"{_pfx}async:{_tpr} reject",
-            f"{_pfx}async:{_tpr} reject <target>",
-            f"{_pfx}async:{_tpr} cancel",
-            f"{_pfx}async:{_tpr} cancel <target>",
+            f"{_pfx}{_tpr} accept",
+            f"{_pfx}{_tpr} accept <target>",
+            f"{_pfx}{_tpr} reject",
+            f"{_pfx}{_tpr} reject <target>",
+            f"{_pfx}{_tpr} cancel",
+            f"{_pfx}{_tpr} cancel <target>",
         ],
         _testing_async_tpr_command,
     )
@@ -209,67 +200,6 @@ async def _testing_async_tpr_command(src: CommandSource, ctx: CommandContext):
         raise CommandSyntaxError("failed to parse a valid option.")
 
 
-def _testing_tpa_command(src: CommandSource, ctx: CommandContext):
-    target: str | None = ctx.get("target", None)
-    player: str | None = ctx.get("player", None)
-    source_player: str | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType] # noqa: E501
-    if not player:
-        raise CommandSyntaxError("failed to parse argument `player`.")
-    if not GetInfo.is_player_online(player):
-        src.reply("player_offline")
-        return
-    if target:
-        if not src.has_permission_higher_than(3):
-            src.reply("permission_denied")
-            return
-        if not GetInfo.is_player_online(target):
-            src.reply("player_offline")
-            return
-        tpa_request: TeleportBetweenPlayers = TeleportAsk(
-            ExecSource("player", target)
-        )
-        tpa_request.set_target(player)
-    else:
-        if src.is_player:
-            source_player = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
-        else:
-            src.reply("missing_argument_target")
-            return
-        tpa_request: TeleportBetweenPlayers = TeleportAsk(
-            ExecSource("player", source_player)
-        )
-        tpa_request.set_target(player)
-    if runtime.tp_mgr:
-        runtime.tp_mgr += tpa_request
-    src.reply("tpa.create_request")
-
-
-def _testing_tpr_accept_command(src: CommandSource, ctx: CommandContext):
-    target: str | None = ctx.get("target", None)
-    if target:
-        if not GetInfo.is_player_online(target):
-            src.reply("player_offline")
-            return
-        if not src.has_permission_higher_than(3):
-            src.reply("permission_denied")
-            return
-        if runtime.tp_mgr:
-            runtime.tp_mgr.find_run_task(target)
-    else:
-        if not src.is_player:
-            src.reply("missing_augument_target")
-            return
-        player: str = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
-        if runtime.tp_mgr:
-            runtime.tp_mgr.find_run_task(player)
-
-
-def _debug_on_select_player(src: CommandSource, ctx: CommandContext):
-    player: str | None = ctx.get("player", None)
-    if player:
-        src.reply(f"Choosing {player}")
-
-
 def _debug_on_locate_player(src: CommandSource, ctx: CommandContext):
     player: str | None = ctx.get("player", None)
     if player:
@@ -281,25 +211,38 @@ def _debug_on_locate_player(src: CommandSource, ctx: CommandContext):
             src.reply("Failed to locate player.")
 
 
+def _debug_on_query_player_death(src: CommandSource, ctx: CommandContext):
+    player = get_player(src, ctx)
+    if player:
+        death_position: MCPosition | None = runtime.latest_death_positions.get(
+            player, None
+        )
+        if not death_position:
+            src.reply("query.no_results")
+            return
+        src.reply(
+            f"latest_death_position: {death_position.dimension}: "
+            f"{death_position.point}"
+        )
+
+
 def _debug_on_teleport_player(src: CommandSource, ctx: CommandContext):
-    teleport: TeleportToAny | None = None
+    server: PluginServerInterface = src.get_server().psi()
+    teleport: TeleportPosition = TeleportPosition(server)
+    teleport.set_position(Point3D(12, 64, 35))
     player: str | None = ctx.get("player", None)
-    target: str | MCPosition = "Bot"
-    if ctx.get("to_pos", False):
-        target = MCPosition(Point3D(12, 64, 35), "minecraft:overworld")
     if src.is_console:
-        teleport = TeleportToAny(ExecSource("console"))
-        teleport.set_target(target, player)
+        if not player:
+            src.reply("command.missing_argument.player")
+            return
+        teleport.set_target(player)
+        teleport.execute(debug=True)
     elif src.is_player:
-        player = src.player  # pyright: ignore[reportAttributeAccessIssue]
-        teleport = TeleportToAny(ExecSource("player", player))
-        teleport.set_target(target)
+        teleport.set_target(src.player)  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+        teleport.execute(debug=True, src_player=src.player)  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
     else:
-        src.reply("Not implemented yet.")
+        src.reply(tr(server, "feature.not_implemented"))
         return
-    command: str | None = teleport.execute(debug=True)
-    if command:
-        src.reply(command)
 
 
 def on_plugin_clean_main_config(src: CommandSource, ctx: CommandContext):

@@ -1,2 +1,4 @@
 modern_teleport:
   on_load: 初始消息。
+  feature:
+    not_implemented: 功能尚未实现。

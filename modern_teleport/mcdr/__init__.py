@@ -17,7 +17,7 @@ from modern_teleport.mcdr.config import (
 )
 from modern_teleport.mcdr.commands import load_command_nodes, register_commands
 from modern_teleport.modules import init_modules, GetInfo
-from modern_teleport.utils.execute_if import execute_if
+from modern_teleport.utils import execute_if, tr
 
 psi: PluginServerInterface | None = None
 try:
@@ -27,7 +27,7 @@ except RuntimeError:
 
 
 def on_load(s: PluginServerInterface, _):
-    s.logger.info("Init message.")
+    s.logger.info(tr(s, "on_load"))
     config: MainConfig = get_config(s)
     runtime.load_config(config)
     runtime.set_server(s)
@@ -41,6 +41,14 @@ def on_player_joined(server: PluginServerInterface, player: str, info: Info):
     pass
 
 
+def on_user_info(server: PluginServerInterface, info: Info):
+    if info.content == "y":
+        if info.is_from_console:
+            info.cancel_send_to_server()
+        # result: str = quick_confirm()
+        # server.reply(info, result)
+
+
 @event_listener("PlayerDeathEvent")
 def on_player_death(
     server: PluginServerInterface,
@@ -50,7 +58,7 @@ def on_player_death(
 ):
     death_position: MCPosition | None = GetInfo.get_player_position(player)
     if death_position:
-        runtime.last_death_positions.update({player: death_position})
+        runtime.latest_death_positions.update({player: death_position})
 
 
 @execute_if(lambda: runtime.async_tp_mgr is not None)

@@ -1,2 +1,4 @@
 modern_teleport:
   on_load: Init message.
+  feature:
+    not_implemented: This feature is not implemented.
