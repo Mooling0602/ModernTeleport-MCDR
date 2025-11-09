@@ -3,15 +3,30 @@ import modern_teleport.runtime as runtime
 
 from datetime import datetime
 from typing import Literal
-
 from mcdreforged.api.all import PluginServerInterface
 from location_api import MCPosition, Point3D
 
-_TeleportType = Literal["ask", "invite", "position"]
+TeleportType = Literal["ask", "invite", "position"]
 TeleportRequestOptions = Literal["accept", "reject", "cancel"]
 
 
-def get_teleport_command(tp_type: _TeleportType, prefix_slash: bool = False):
+def get_teleport_command(
+    tp_type: TeleportType,
+    prefix_slash: bool = False
+) -> str:
+    """Get the teleport command for executing in the game.
+
+    Args:
+        tp_type (TeleportType): Type of the teleport request.
+        prefix_slash (bool, optional): Use slash as prefix of the command. \
+            Defaults to False.
+
+    Raises:
+        TypeError: Raises when invalid tp_type given.
+
+    Returns:
+        str: The teleport command string.
+    """
     prefix: str = ""
     if prefix_slash:
         prefix = "/"
@@ -32,25 +47,57 @@ def get_teleport_command(tp_type: _TeleportType, prefix_slash: bool = False):
 
 
 class TeleportPosition:
+    """Teleport a target player to a specific position.
+    """
     def __init__(
         self,
         server: PluginServerInterface,
         target_player: str | None = None,
         po: MCPosition | Point3D | None = None
     ):
+        """Create a task to teleport a target player to a specific position.
+
+        Args:
+            server (PluginServerInterface): \
+                MCDReforged plugin server interface.
+            target_player (str | None, optional): The target player name. \
+                Defaults to None.
+            po (MCPosition | Point3D | None, optional): A MCPosition or \
+                Point3D instance of the target position if not None. \
+                Defaults to None.
+        """
         self.server: PluginServerInterface = server
         self.s = server
         self.target_player: str | None = target_player
-        self.po: MCPosition | Point3D | None = None
+        self.po: MCPosition | Point3D | None = po
         self.command: str | None = None
 
     def set_target(self, target_player: str):
+        """Add or change the target player name.
+
+        Args:
+            target_player (str): The target player name.
+        """
         self.target_player = target_player
 
     def set_position(self, po: MCPosition | Point3D):
+        """Add or change the target position.
+
+        Args:
+            po (MCPosition | Point3D): A MCPosition or Point3D instance \
+                of the target position.
+        """
         self.po = po
 
     def get_command(self) -> str:
+        """Get the command string for executing in the game.
+
+        Raises:
+            TypeError: If invalid data given in this class.
+
+        Returns:
+            str: The command string for executing in the game.
+        """
         if not self.target_player:
             raise TypeError(
                 "No valid player name given. Please `set_target` first."
@@ -73,6 +120,14 @@ class TeleportPosition:
             raise TypeError("No valid position given.")
 
     def execute(self, debug: bool = False, src_player: str | None = None):
+        """Execute the command string and run the teleport task.
+
+        Args:
+            debug (bool, optional): If True, only log the command string \
+                in console. Defaults to False.
+            src_player (str | None, optional): The target player name of \
+                who will receive the notification message. Defaults to None.
+        """
         command: str = self.get_command()
         if "execute" not in command:
             self.s.logger.warning(
@@ -88,13 +143,27 @@ class TeleportPosition:
 
 
 class TeleportRequest:
+    """Teleport request async designed.
+    """
     def __init__(
         self,
         server: PluginServerInterface,
-        tp_type: _TeleportType,
+        tp_type: TeleportType,
         selected_player: str,
         target_player: str,
     ):
+        """Create an async teleport request.
+
+        Args:
+            server (PluginServerInterface): MCDReforged plugin server \
+                interface.
+            tp_type (TeleportType): The type of the teleport request.
+            selected_player (str): The player who asked for this request.
+            target_player (str): The player who is receiving this request.
+
+        Raises:
+            TypeError: If tp_type is 'position', a warning will be printed.
+        """
         if tp_type == "position":
             raise TypeError(
                 "Teleporting to a position is not supported here, "
@@ -102,7 +171,7 @@ class TeleportRequest:
             )
         self.server: PluginServerInterface = server
         self.s = self.server  # alias
-        self.tp_type: _TeleportType = tp_type
+        self.tp_type: TeleportType = tp_type
         self.tp_task: asyncio.Task | None = None
         self.wait_confirm: asyncio.Future = asyncio.Future()
         self._command_format: str = get_teleport_command(tp_type)
@@ -115,6 +184,8 @@ class TeleportRequest:
         self.start_time: datetime | None = None
 
     async def set_task(self):
+        """Set up the async teleport request task.
+        """
         assert runtime.config is not None
         self.start_time = datetime.now()
         timeout: float = runtime.config.timeout.teleport
@@ -125,25 +196,44 @@ class TeleportRequest:
         self.s.tell(self.target_player, "tpr.receive")
 
     def accept(self):
+        """Accept the teleport request.
+        """
         if not self.wait_confirm.done():
             self.wait_confirm.set_result(True)
             self.s.tell(self.target_player, "tpr.accept")
             self.s.tell(self.selected_player, "tpr.accepted")
 
     def reject(self):
+        """Reject the teleport request.
+        """
         if not self.wait_confirm.done():
             self.wait_confirm.set_result(False)
             self.s.tell(self.target_player, "tpr.reject")
             self.s.tell(self.selected_player, "tpr.rejected")
 
     def cancel(self, reason: str | None = None):
+        """Cancel the teleport request.
+
+        Args:
+            reason (str | None, optional): Why the teleport request is \
+                cancelling. Defaults to None.
+        """
         if not self.wait_confirm.done():
             self.wait_confirm.cancel()
             if self.s.is_server_running():
-                self.s.tell(self.target_player, "tpr.cancel")
-                self.s.tell(self.selected_player, "tpr.cancelled")
+                if not reason:
+                    self.s.tell(self.target_player, "tpr.cancel")
+                    self.s.tell(self.selected_player, "tpr.cancelled")
+                else:
+                    self.s.tell(self.target_player, reason)
+                    self.s.tell(self.selected_player, reason)
 
     async def wait_for_target_player(self) -> bool:
+        """Asyncly wait for confirmation from the target player.
+
+        Returns:
+            bool: True if the target player accepted the teleport request.
+        """
         try:
             result: bool = await self.wait_confirm
             if result:
@@ -161,11 +251,15 @@ class TeleportRequest:
             return False
 
     def when_timeout(self):
+        """Send error logs and messages when the teleport request timeout.
+        """
         self.s.logger.error("tpr.timeout")
         self.s.tell(self.selected_player, "tpr.timeout")
         self.s.tell(self.target_player, "tpr.timeout")
 
     def when_cancelled(self):
+        """Log errors when the teleport request is cancelled.
+        """
         if self.tp_type == "ask":
             self.s.logger.error(
                 f"tpr.cancelled_by_unload: {self.selected_player}"
@@ -178,13 +272,26 @@ class TeleportRequest:
             )
 
 
-class AsyncSessionManager:
+class SessionManager:
+    """Session manager for managing the teleport requests async designed.
+    """
     def __init__(self, server: PluginServerInterface):
+        """Init session manager.
+
+        Args:
+            server (PluginServerInterface): MCDReforged plugin server \
+                interface.
+        """
         self.server: PluginServerInterface = server
         self.s = self.server  # alias
         self.tp_tasks: list[TeleportRequest] = []
 
     async def add(self, tp_task: TeleportRequest):
+        """Add a teleport request in session manager.
+
+        Args:
+            tp_task (TeleportRequest): A teleport request task.
+        """
         if len(self.tp_tasks) > 0:
             for i in self.tp_tasks:
                 if (
@@ -209,6 +316,12 @@ class AsyncSessionManager:
                 self.tp_tasks.remove(tp_task)
 
     def schedule_add(self, tp_task: TeleportRequest):
+        """Add a teleport request task and schedule it in MCDReforged \
+            AsyncTaskExecutor.
+
+        Args:
+            tp_task (TeleportRequest): The teleport request task.
+        """
         async def add_task():
             await self.add(tp_task)
 
@@ -217,6 +330,16 @@ class AsyncSessionManager:
     def confirm_latest_request(
         self, target_player: str, option: TeleportRequestOptions
     ):
+        """Confirm the latest teleport request in session manager.
+
+        Args:
+            target_player (str): The target player of the target teleport \
+                request.
+            option (TeleportRequestOptions): The option will be executed.
+
+        Raises:
+            ValueError: Raises if invalid option given.
+        """
         tasks_to_do: list[TeleportRequest] = []
         for i in self.tp_tasks:
             if i.target_player.lower() == target_player.lower():
@@ -241,5 +364,8 @@ class AsyncSessionManager:
             raise ValueError(f"Invalid option: {option}")
 
     def cancel_all_requests(self):
+        """Cancel all teleport requests in session manager. Useful when \
+            unloading plugin.
+        """
         for i in self.tp_tasks:
             i.cancel()

@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Callable, TypeVar, ParamSpec
 from functools import wraps
 

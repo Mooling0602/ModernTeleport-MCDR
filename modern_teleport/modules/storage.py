@@ -8,6 +8,8 @@ from modern_teleport.utils import execute_if
 
 
 class MTP(StrEnum):
+    """MTP modules name.
+    """
     BACK = auto()
     HOME = auto()
     WARP = auto()
@@ -15,8 +17,16 @@ class MTP(StrEnum):
 
 
 class DataManager:
+    """Data manager to manage plugin data.
+    """
     @execute_if(lambda: runtime.config is not None, True)
     def __init__(self, server: PluginServerInterface) -> None:
+        """Init data manager
+
+        Args:
+            server (PluginServerInterface): MCDReforged plugin server \
+                interface.
+        """
         assert runtime.config is not None
         self.config: runtime.MainConfig = runtime.config
         self.server: PluginServerInterface = server
@@ -40,6 +50,17 @@ class DataManager:
             )
 
     def get_player_folder(self, name_or_uuid: str) -> str:
+        """Get a data storage directory for a player.
+
+        Args:
+            name_or_uuid (str): The player name or uuid string.
+
+        Raises:
+            RuntimeError: If uuid need but could not get.
+
+        Returns:
+            str: The directory (folder) path.
+        """
         assert runtime.config is not None
         if is_uuid(name_or_uuid):
             return os.path.join(self.data_folder, name_or_uuid)
@@ -54,7 +75,20 @@ class DataManager:
 
     def get_data_file_path(
         self, module: MTP, name_or_uuid: str | None = None
-    ) -> str | None:
+    ) -> str:
+        """Get the path of a data file.
+
+        Args:
+            module (MTP): MTP module name.
+            name_or_uuid (str | None, optional): The player name or uuid. \
+                Defaults to None.
+
+        Raises:
+            TypeError: If the player name or uuid need but not given.
+
+        Returns:
+            str: The path of the data file.
+        """
         if module == MTP.WARP or module == MTP.TPRequest:
             return os.path.join(self.data_folder, f"{module}.json")
         else:
