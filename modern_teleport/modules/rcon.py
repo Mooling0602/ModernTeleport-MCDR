@@ -30,7 +30,7 @@ class RconManager:
                 self.s.rcon_query, command
             )
         try:
-            result: str | None = future.result(
+            result: str | None = future.result(  # pyright: ignore[reportRedeclaration] # noqa: E501
                 timeout=runtime.config.timeout.rcon_wait
             )
         except TimeoutError:
@@ -67,7 +67,9 @@ class RconManager:
                 r"There are \d+ of a max of \d+ players online:", reply
             )
             if match:
+                # fmt: off
                 names_section: str = reply[match.end():].strip()
+                # fmt: on
                 if names_section:
                     online_list: list[str] = [
                         name.strip()
@@ -81,8 +83,8 @@ class RconManager:
     def get_player_pos(self, player: str) -> MCPosition | None:
         pos_info: str | None = self.get(f"data get entity {player} Pos")
         dim_info: str | None = self.get(f"data get entity {player} Dimension")
-        pos_info_valid: bool = (pos_info != "No entity was found")
-        dim_info_valid: bool = (dim_info != "No entity was found")
+        pos_info_valid: bool = pos_info != "No entity was found"
+        dim_info_valid: bool = dim_info != "No entity was found"
         if pos_info and dim_info:
             if pos_info_valid and dim_info_valid:
                 pos_data: str = pos_info.split(":")[1].strip()

@@ -66,7 +66,7 @@ def get_player_pos_optional(
         dimension: str | None = mc_data_api.get_player_info(
             player, "Dimension"
         )  # type: ignore
-        # fmt: off
+        # fmt: on
         if position and dimension:
             return MCPosition(Point3D(*position), dimension)
 

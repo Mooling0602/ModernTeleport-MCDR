@@ -45,7 +45,7 @@ class Player:
         self, name: str | None = None, uuid: str | UUID | None = None
     ) -> None:
         self.name: str | None = name
-        self.uuid: UUID | None = None
+        self.uuid: UUID | None = None  # pyright: ignore[reportRedeclaration]
         if isinstance(uuid, str):
             self.uuid: UUID | None = UUID(uuid)
         if not name and not uuid:

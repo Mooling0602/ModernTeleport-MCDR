@@ -77,23 +77,16 @@ def register_commands(s: PluginServerInterface):
         ],
         on_plugin_clean_main_config,
     )
-    builder.command(
-        f"{_cmd} debug player <player>", Player.on_debug_command
-    )
+    builder.command(f"{_cmd} debug player <player>", Player.on_debug_command)
     builder.command(
         f"{_cmd} debug online",
         lambda src: GetInfo.list_online_players(src),
     )
-    builder.command(
-        f"{_cmd} debug locate <player>", _debug_on_locate_player
-    )
+    builder.command(f"{_cmd} debug locate <player>", _debug_on_locate_player)
     build_commands(
         builder,
-        [
-            f"{_cmd} debug query death",
-            f"{_cmd} debug query death <player>"
-        ],
-        _debug_on_query_player_death
+        [f"{_cmd} debug query death", f"{_cmd} debug query death <player>"],
+        _debug_on_query_player_death,
     )
     build_commands(
         builder,
@@ -109,7 +102,7 @@ def register_commands(s: PluginServerInterface):
             f"{_pfx}{_tpa} <player>",
             f"{_pfx}{_tpa} <player> --debug",
             f"{_pfx}{_tpa} <player> <target>",
-            f"{_pfx}{_tpa} <player> <target> --debug"
+            f"{_pfx}{_tpa} <player> <target> --debug",
         ],
         _testing_async_tpa_command,
     )
@@ -175,7 +168,7 @@ async def _testing_async_tpr_command(src: CommandSource, ctx: CommandContext):
         if not src.is_player:
             src.reply("missing_argument_target")
             return
-        target_player: str = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+        target_player: str = src.player  # pyright: ignore[reportAttributeAccessIssue, reportRedeclaration] # noqa: E501
     else:
         target_player: str = _target_player
     # if not GetInfo.is_player_online(target_player):
@@ -198,6 +191,67 @@ async def _testing_async_tpr_command(src: CommandSource, ctx: CommandContext):
         )
     else:
         raise CommandSyntaxError("failed to parse a valid option.")
+
+
+def _testing_tpa_command(src: CommandSource, ctx: CommandContext):
+    target: str | None = ctx.get("target", None)
+    player: str | None = ctx.get("player", None)
+    source_player: str | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType] # noqa: E501
+    if not player:
+        raise CommandSyntaxError("failed to parse argument `player`.")
+    if not GetInfo.is_player_online(player):
+        src.reply("player_offline")
+        return
+    if target:
+        if not src.has_permission_higher_than(3):
+            src.reply("permission_denied")
+            return
+        if not GetInfo.is_player_online(target):
+            src.reply("player_offline")
+            return
+        tpa_request: TeleportBetweenPlayers = TeleportAsk(  # pyright: ignore[reportRedeclaration] # noqa: E501
+            ExecSource("player", target)
+        )
+        tpa_request.set_target(player)
+    else:
+        if src.is_player:
+            source_player = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+        else:
+            src.reply("missing_argument_target")
+            return
+        tpa_request: TeleportBetweenPlayers = TeleportAsk(
+            ExecSource("player", source_player)
+        )
+        tpa_request.set_target(player)
+    if runtime.tp_mgr:
+        runtime.tp_mgr += tpa_request
+    src.reply("tpa.create_request")
+
+
+def _testing_tpr_accept_command(src: CommandSource, ctx: CommandContext):
+    target: str | None = ctx.get("target", None)
+    if target:
+        if not GetInfo.is_player_online(target):
+            src.reply("player_offline")
+            return
+        if not src.has_permission_higher_than(3):
+            src.reply("permission_denied")
+            return
+        if runtime.tp_mgr:
+            runtime.tp_mgr.find_run_task(target)
+    else:
+        if not src.is_player:
+            src.reply("missing_augument_target")
+            return
+        player: str = src.player  # pyright: ignore[reportAttributeAccessIssue] # noqa: E501
+        if runtime.tp_mgr:
+            runtime.tp_mgr.find_run_task(player)
+
+
+def _debug_on_select_player(src: CommandSource, ctx: CommandContext):
+    player: str | None = ctx.get("player", None)
+    if player:
+        src.reply(f"Choosing {player}")
 
 
 def _debug_on_locate_player(src: CommandSource, ctx: CommandContext):
