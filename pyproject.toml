@@ -12,6 +12,7 @@ dependencies = [
   "auto-uuid-api-mcdr",
   "location-api",
   "mcdreforged>=2.14.1",
+  "moolings-rcon-api",
 ]
 
 [tool.ruff]
@@ -28,3 +29,4 @@ packages = ["src/modern_teleport"]
 [tool.uv.sources]
 auto-uuid-api-mcdr = { git = "https://github.com/Mooling0602/Auto-UUID-API-MCDR.git" }
 location-api = { git = "https://github.com/Mooling0602/LocationAPI-MCDR.git" }
+moolings-rcon-api = { git = "https://github.com/Mooling0602/MoolingsRconAPI-MCDR.git" }

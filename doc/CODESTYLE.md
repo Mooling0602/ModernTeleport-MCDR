@@ -11,3 +11,5 @@ In the source code of this project, docstrings use the reStructuredText style an
 ## I18n
 
 MCDR plugins typically use the `PluginServerInterface.tr()` method to obtain specified translation results, which requires passing a translation key string as a parameter. To improve development efficiency, translation key strings are usually used directly in the early development stage, and later switched to using the `tr()` method to obtain translation results as needed.
+
+> For strings that startswith "tr#", please help use the `tr()` method to obtain translation results. "tr#" is just a i18n remind tag, strip it before using the string as a translation key string.
