@@ -6,7 +6,13 @@ The purpose of this document is to constrain the text style and coding standards
 
 Docstrings are strings in Python used to describe functions, classes, modules, etc. They should contain information such as the name, parameters, return values, and exceptions of functions or classes.
 
-In the source code of this project, docstrings use the reStructuredText style and generate well-readable documentation through Sphinx.
+In the source code of this project, docstrings use the reStructuredText style and generate well-readable documentation through Sphinx. Docstrings should be wrritten under the code line.
+
+## Comments
+
+Comments is different from docstrings, which are used to describe the implementation details of the code. Comments are written before the target code line.
+
+Only really useful comments should be kept finally. Else, write normally docstrings instead.
 
 ## I18n
 
