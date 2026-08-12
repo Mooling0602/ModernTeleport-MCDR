@@ -6,7 +6,7 @@ from mcdreforged.api.all import (
     SimpleCommandBuilder,
 )
 
-# These are root command literal string nodes, can be modified from configurations.
+# Root command literal node fallbacks.
 _cmd_root_pfx = "!!"
 _cmd_root_node = "mtp"
 _cmd_tp_back_node = "back"
@@ -31,5 +31,10 @@ def get_namespace_pfx() -> str:
     return "modern_teleport:"
 
 
+def command_builder(server: PluginServerInterface):
+    mtp.runs(lambda src: src.reply("Not implemented yet."))
+
+
 def command_register(server: PluginServerInterface):
-    raise NotImplementedError
+    command_builder(server)
+    server.register_command(mtp)
