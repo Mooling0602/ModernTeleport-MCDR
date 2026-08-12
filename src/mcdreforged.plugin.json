@@ -12,14 +12,14 @@
     "mcdreforged": ">=2.14.1",
     "python": ">=3.12",
     "auto_uuid_api": ">=0.1.0",
-    "location_api": ">=0.2.0",
-    "moolings_rcon_api": ">=0.1.3"
+    "location_api": ">=0.2.0"
   },
   "optional_dependencies": {
     "location_marker": ">=1.3.1",
     "minecraft_data_api": ">=1.6.1",
     "online_player_api": ">=1.0.0",
-    "auto_uuid_api": ">=0.1.0"
+    "auto_uuid_api": ">=0.1.0",
+    "moolings_rcon_api": ">=0.1.3"
   },
   "resources": ["lang"]
 }
