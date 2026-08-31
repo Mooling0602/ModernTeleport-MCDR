@@ -19,12 +19,12 @@ _cmd_tp_warp_node = "warp"
 
 builder = SimpleCommandBuilder()
 mtp = Literal(_cmd_root_pfx + _cmd_root_node)
-"""Main entrypoint for the command system of ModernTeleport.
-"""
+"""Main entrypoint for the command system of ModernTeleport."""
 
 
 def get_namespace_pfx() -> str:
-    """Get the namespace prefix of ModernTeleport, which is used to identify commands when conflicting with other plugins.
+    """Get the namespace prefix of ModernTeleport, which is used to
+    identify commands when conflicting with other plugins.
 
     :return: The namespace prefix string.
     """
