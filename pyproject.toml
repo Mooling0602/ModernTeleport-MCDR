@@ -18,6 +18,13 @@ dependencies = [
 [tool.ruff]
 line-length = 79
 
+[tool.docformatter]
+# Used by ./format_code.sh (docstring wrapping only).
+# Blank lines *outside* docstrings are owned by `ruff format`, which always
+# runs last -- see format_code.sh for why.
+wrap-summaries = 72
+wrap-descriptions = 72
+
 [tool.hatch.version]
 source = "regex"
 path = "src/mcdreforged.plugin.json"
