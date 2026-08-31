@@ -31,10 +31,12 @@ def get_namespace_pfx() -> str:
     return "modern_teleport:"
 
 
-def command_builder(server: PluginServerInterface):
+def command_builder():
+    """Build the command tree for ModernTeleport."""
     mtp.runs(lambda src: src.reply("Not implemented yet."))
 
 
 def command_register(server: PluginServerInterface):
-    command_builder(server)
+    """Register the command tree for ModernTeleport with the server."""
+    command_builder()
     server.register_command(mtp)
