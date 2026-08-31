@@ -27,6 +27,29 @@ pattern = "\"version\"\\s*:\\s*\"(?P<version>[^\"]+)\""
 packages = ["src/modern_teleport"]
 
 [tool.uv.sources]
-auto-uuid-api-mcdr = { git = "https://github.com/Mooling0602/Auto-UUID-API-MCDR.git" }
-location-api = { git = "https://github.com/Mooling0602/LocationAPI-MCDR.git" }
-moolings-rcon-api = { git = "https://github.com/Mooling0602/MoolingsRconAPI-MCDR.git" }
+# TODO: tag 0.1.0 of auto-uuid-api-mcdr is stale (missing floodgate regex fix & src/ restructure);
+# pin to a new tag (e.g. 0.1.1) once created in the upstream repo.
+auto-uuid-api-mcdr = { git = "https://github.com/Mooling0602/Auto-UUID-API-MCDR.git", rev = "b559bfd4ebb2455694f489edda69329fca1ed51c" }
+location-api = { git = "https://github.com/Mooling0602/LocationAPI-MCDR.git", tag = "v0.4.4" }
+moolings-rcon-api = { git = "https://github.com/Mooling0602/MoolingsRconAPI-MCDR.git", tag = "v0.1.3" }
+
+[dependency-groups]
+dev = [
+    "docformatter>=1.7.8",
+    "ruff>=0.16.5",
+    "ty>=0.0.75",
+]
+docs = [
+    "jieba>=0.42.1",
+    "sphinx>=9.1.0",
+    "sphinx-autobuild>=2025.8.25",
+    "sphinx-autodoc-typehints>=3.13.4",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-design>=0.7.0",
+    "sphinx-inline-tabs>=2025.12.21.14",
+    "sphinx-intl>=2.4.0",
+    "sphinx-prompt>=1.10.2",
+    "sphinx-rtd-theme>=3.1.0",
+    "sphinxcontrib-asciinema>=0.4.3",
+    "sphinxcontrib-mermaid>=2.1.0",
+]
