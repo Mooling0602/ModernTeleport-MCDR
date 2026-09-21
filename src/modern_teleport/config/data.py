@@ -1,4 +1,4 @@
-from mcdreforged.api.all import Serializable
+from mcdreforged import Serializable
 
 
 class RconSettings(Serializable):

@@ -1,6 +1,6 @@
 """Internationalization utilities for the ModernTeleport plugin."""
 
-from mcdreforged.api.all import PluginServerInterface, RTextMCDRTranslation
+from mcdreforged import PluginServerInterface, RTextMCDRTranslation
 
 
 def tr(

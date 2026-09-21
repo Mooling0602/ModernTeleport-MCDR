@@ -1,4 +1,4 @@
-from mcdreforged.api.all import PluginServerInterface, ServerInterface
+from mcdreforged import PluginServerInterface, ServerInterface
 
 from modern_teleport.config import MTPConfig
 

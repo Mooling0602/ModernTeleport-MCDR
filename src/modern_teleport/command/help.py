@@ -1,4 +1,4 @@
-from mcdreforged.api.all import CommandSource, RText, RTextList
+from mcdreforged import CommandSource, RText, RTextList
 
 ## > !!mtp | > !!mtp help
 ## Rich functional modern design for Minecraft teleportation.

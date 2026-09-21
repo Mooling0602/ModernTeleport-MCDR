@@ -1,4 +1,4 @@
-from mcdreforged.api.all import (
+from mcdreforged import (
     CommandContext,  # noqa: F401
     CommandSource,  # noqa: F401
     Literal,

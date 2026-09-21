@@ -3,7 +3,7 @@
 About docstring and i18n, see [CODESTYLE.md](doc/CODESTYLE.md).
 """
 
-from mcdreforged.api.all import PluginServerInterface
+from mcdreforged import PluginServerInterface
 
 import modern_teleport.runtime as rt
 from modern_teleport.config import get_config

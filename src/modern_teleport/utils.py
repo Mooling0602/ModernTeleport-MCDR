@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mcdreforged.api.all import PluginServerInterface
+from mcdreforged import PluginServerInterface
 
 
 def extract_file(
