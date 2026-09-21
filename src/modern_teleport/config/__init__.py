@@ -3,7 +3,7 @@ from mcdreforged import PluginServerInterface
 from modern_teleport.config.data import MTPConfig
 
 
-def get_config(server: PluginServerInterface) -> MTPConfig:
+def load_config(server: PluginServerInterface) -> MTPConfig:
     config = server.load_config_simple(
         file_name="config.yml", target_class=MTPConfig
     )

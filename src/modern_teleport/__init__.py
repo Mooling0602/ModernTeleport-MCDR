@@ -6,13 +6,13 @@ About docstring and i18n, see [CODESTYLE.md](doc/CODESTYLE.md).
 from mcdreforged import PluginServerInterface
 
 import modern_teleport.runtime as rt
-from modern_teleport.config import get_config
+from modern_teleport.config import load_config
 from modern_teleport.config.i18n import tr
 
 
 def on_load(server: PluginServerInterface, _):
     rt.psi = server
-    rt.config = get_config(server)
+    rt.config = load_config(server)
     server.logger.info(tr(server, "loading_message"))
 
 
