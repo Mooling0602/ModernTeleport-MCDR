@@ -15,3 +15,8 @@ config: MTPConfig = MTPConfig()
 def get_config() -> MTPConfig:
     """Lazy get the config instance."""
     return config
+
+
+def get_psi() -> PluginServerInterface:
+    """Lazy get the plugin server interface."""
+    return psi
