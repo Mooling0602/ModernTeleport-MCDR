@@ -1,6 +1,7 @@
 from mcdreforged import PluginServerInterface
 
 from modern_teleport.config.data import MTPConfig
+from modern_teleport.config.i18n import tr
 
 
 def load_config(server: PluginServerInterface) -> MTPConfig:
@@ -8,7 +9,7 @@ def load_config(server: PluginServerInterface) -> MTPConfig:
         file_name="config.yml", target_class=MTPConfig
     )
     if not isinstance(config, MTPConfig):
-        server.logger.error("tr#config_fallback_error")
+        server.logger.error(tr(server, "config_fallback_error"))
         raise RuntimeWarning(
             "Failed to load valid config options for 'modern_teleport', will fallback to default values."
         )
